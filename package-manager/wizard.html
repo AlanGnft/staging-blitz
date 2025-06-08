@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Character Creation Wizard - Running Blitz</title>
+    <link rel="stylesheet" href="wizard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div class="wizard-container">
+        <!-- Header -->
+        <header class="wizard-header">
+            <h1>🎨 Character Creation Wizard</h1>
+            <div class="wizard-progress">
+                <div class="step active" data-step="1">1</div>
+                <div class="step" data-step="2">2</div>
+                <div class="step" data-step="3">3</div>
+                <div class="step" data-step="4">4</div>
+                <div class="step" data-step="5">5</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="wizard-content">
+            <!-- Step 1: Template Selection -->
+            <div class="wizard-step active" id="step-1">
+                <h2>Choose a Character Template</h2>
+                <div class="template-grid">
+    <div class="template-card" data-template="geometric">
+        <div class="template-preview">🔷</div>
+        <h3>Geometric</h3>
+        <p>Clean shapes and angles</p>
+    </div>
+    <div class="template-card" data-template="organic">
+        <div class="template-preview">🌱</div>
+        <h3>Organic</h3>
+        <p>Natural and flowing forms</p>
+    </div>
+    <div class="template-card" data-template="mechanical">
+        <div class="template-preview">🤖</div>
+        <h3>Mechanical</h3>
+        <p>Tech and robot-like</p>
+    </div>
+    <div class="template-card" data-template="food">
+        <div class="template-preview">🍩</div>
+        <h3>Food & Treats</h3>
+        <p>Delicious characters</p>
+    </div>
+    <div class="template-card" data-template="creature">
+        <div class="template-preview">👾</div>
+        <h3>Fantasy Creatures</h3>
+        <p>Mythical beings</p>
+    </div>
+    <div class="template-card" data-template="space">
+        <div class="template-preview">🚀</div>
+        <h3>Space & Sci-Fi</h3>
+        <p>Cosmic adventures</p>
+    </div>
+    <div class="template-card" data-template="nature">
+        <div class="template-preview">🌺</div>
+        <h3>Nature & Plants</h3>
+        <p>Garden variety</p>
+    </div>
+    <div class="template-card" data-template="action">
+        <div class="template-preview">⚔️</div>
+        <h3>Action Heroes</h3>
+        <p>Warriors and fighters</p>
+    </div>
+    <div class="template-card" data-template="cute">
+        <div class="template-preview">🥰</div>
+        <h3>Cute & Kawaii</h3>
+        <p>Adorable friends</p>
+    </div>
+    <div class="template-card" data-template="spooky">
+        <div class="template-preview">👻</div>
+        <h3>Spooky & Horror</h3>
+        <p>Scary but fun</p>
+    </div>
+    <div class="template-card" data-template="elemental">
+        <div class="template-preview">🔥</div>
+        <h3>Elemental</h3>
+        <p>Fire, water, earth, air</p>
+    </div>
+    <div class="template-card" data-template="custom">
+        <div class="template-preview">✨</div>
+        <h3>Custom Build</h3>
+        <p>Start from scratch</p>
+    </div>
+</div>
+            </div>
+
+            <!-- Step 2: Basic Shape -->
+            <div class="wizard-step" id="step-2">
+                <h2>Design Your Character's Body</h2>
+                <div class="shape-controls">
+                    <div class="control-group">
+    <label>Body Shape</label>
+    <div class="shape-options">
+        <button class="shape-btn active" data-shape="sphere">🔴 Sphere</button>
+        <button class="shape-btn" data-shape="cube">🟦 Cube</button>
+        <button class="shape-btn" data-shape="cylinder">🔵 Cylinder</button>
+        <button class="shape-btn" data-shape="cone">🔺 Cone</button>
+        <button class="shape-btn" data-shape="torus">🍩 Torus</button>
+        <button class="shape-btn" data-shape="octahedron">💎 Octahedron</button>
+        <button class="shape-btn" data-shape="dodecahedron">⚽ Dodecahedron</button>
+        <button class="shape-btn" data-shape="icosahedron">🏀 Icosahedron</button>
+        <button class="shape-btn" data-shape="tetrahedron">🔻 Tetrahedron</button>
+        <button class="shape-btn" data-shape="capsule">💊 Capsule</button>
+        <button class="shape-btn" data-shape="ring">💍 Ring</button>
+        <button class="shape-btn" data-shape="plane">📄 Plane</button>
+    </div>
+</div>
+                    <div class="control-group">
+                        <label>Size</label>
+                        <input type="range" id="body-size" min="0.5" max="2" value="1" step="0.1">
+                        <span class="value-display">1.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Height</label>
+                        <input type="range" id="body-height" min="0.5" max="2" value="1" step="0.1">
+                        <span class="value-display">1.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Width</label>
+                        <input type="range" id="body-width" min="0.5" max="2" value="1" step="0.1">
+                        <span class="value-display">1.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Colors & Materials -->
+            <div class="wizard-step" id="step-3">
+                <h2>Choose Colors & Materials</h2>
+                <div class="color-controls">
+                    <div class="control-group">
+                        <label>Primary Color</label>
+                        <input type="color" id="primary-color" value="#4A90E2">
+                        <div class="color-presets">
+                            <div class="color-preset" style="background: #FF6B6B" data-color="#FF6B6B"></div>
+                            <div class="color-preset" style="background: #4ECDC4" data-color="#4ECDC4"></div>
+                            <div class="color-preset" style="background: #45B7D1" data-color="#45B7D1"></div>
+                            <div class="color-preset" style="background: #96CEB4" data-color="#96CEB4"></div>
+                            <div class="color-preset" style="background: #FECA57" data-color="#FECA57"></div>
+                            <div class="color-preset" style="background: #FF9FF3" data-color="#FF9FF3"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Material Type</label>
+                        <div class="material-options">
+                            <button class="material-btn active" data-material="standard">Standard</button>
+                            <button class="material-btn" data-material="metallic">Metallic</button>
+                            <button class="material-btn" data-material="glossy">Glossy</button>
+                            <button class="material-btn" data-material="matte">Matte</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Metalness</label>
+                        <input type="range" id="metalness" min="0" max="1" value="0" step="0.1">
+                        <span class="value-display">0.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Roughness</label>
+                        <input type="range" id="roughness" min="0" max="1" value="0.5" step="0.1">
+                        <span class="value-display">0.5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Features & Details -->
+<div class="wizard-step" id="step-4">
+    <h2>Add Features & Details</h2>
+    <div class="features-controls">
+        <div class="feature-section">
+            <h3>👀 Eyes</h3>
+            <div class="feature-options">
+                <button class="feature-btn active" data-feature="eyes" data-type="simple">• Simple Dots</button>
+                <button class="feature-btn" data-feature="eyes" data-type="large">○ Large Eyes</button>
+                <button class="feature-btn" data-feature="eyes" data-type="glowing">✨ Glowing</button>
+                <button class="feature-btn" data-feature="eyes" data-type="laser">🔴 Laser Eyes</button>
+                <button class="feature-btn" data-feature="eyes" data-type="sleepy">😴 Sleepy</button>
+                <button class="feature-btn" data-feature="eyes" data-type="angry">😠 Angry</button>
+                <button class="feature-btn" data-feature="eyes" data-type="kawaii">🥺 Kawaii</button>
+                <button class="feature-btn" data-feature="eyes" data-type="none">⬜ No Eyes</button>
+            </div>
+        </div>
+        
+        <div class="feature-section">
+            <h3>👄 Mouth</h3>
+            <div class="feature-options">
+                <button class="feature-btn active" data-feature="mouth" data-type="smile">😊 Smile</button>
+                <button class="feature-btn" data-feature="mouth" data-type="frown">☹️ Frown</button>
+                <button class="feature-btn" data-feature="mouth" data-type="surprised">😮 Surprised</button>
+                <button class="feature-btn" data-feature="mouth" data-type="fangs">🧛 Fangs</button>
+                <button class="feature-btn" data-feature="mouth" data-type="grin">😁 Big Grin</button>
+                <button class="feature-btn" data-feature="mouth" data-type="tongue">😛 Tongue Out</button>
+                <button class="feature-btn" data-feature="mouth" data-type="mustache">🥸 Mustache</button>
+                <button class="feature-btn" data-feature="mouth" data-type="none">⬜ No Mouth</button>
+            </div>
+        </div>
+        
+        <div class="feature-section">
+            <h3>🎩 Accessories</h3>
+            <div class="feature-options">
+                <button class="feature-btn" data-feature="accessory" data-type="hat">🎩 Top Hat</button>
+                <button class="feature-btn" data-feature="accessory" data-type="crown">👑 Crown</button>
+                <button class="feature-btn" data-feature="accessory" data-type="antennae">📡 Antennae</button>
+                <button class="feature-btn" data-feature="accessory" data-type="spikes">⚡ Spikes</button>
+                <button class="feature-btn" data-feature="accessory" data-type="wings">🪶 Wings</button>
+                <button class="feature-btn" data-feature="accessory" data-type="halo">😇 Halo</button>
+                <button class="feature-btn" data-feature="accessory" data-type="horns">😈 Horns</button>
+                <button class="feature-btn" data-feature="accessory" data-type="cape">🦸 Cape</button>
+                <button class="feature-btn" data-feature="accessory" data-type="none">⬜ None</button>
+            </div>
+        </div>
+        
+        <div class="feature-section">
+            <h3>✨ Particle Effects</h3>
+            <div class="feature-options">
+                <button class="feature-btn" data-feature="particles" data-type="sparkles">✨ Sparkles</button>
+                <button class="feature-btn" data-feature="particles" data-type="fire">🔥 Fire Trail</button>
+                <button class="feature-btn" data-feature="particles" data-type="ice">❄️ Ice Crystals</button>
+                <button class="feature-btn" data-feature="particles" data-type="stars">⭐ Star Burst</button>
+                <button class="feature-btn" data-feature="particles" data-type="hearts">💖 Hearts</button>
+                <button class="feature-btn" data-feature="particles" data-type="lightning">⚡ Lightning</button>
+                <button class="feature-btn" data-feature="particles" data-type="bubbles">🫧 Bubbles</button>
+                <button class="feature-btn" data-feature="particles" data-type="none">⬜ None</button>
+            </div>
+        </div>
+        
+        <div class="feature-section">
+            <h3>🎬 Animations</h3>
+            <div class="feature-options">
+                <button class="feature-btn" data-feature="animation" data-type="bounce">🏀 Bounce</button>
+                <button class="feature-btn" data-feature="animation" data-type="spin">🌪️ Spin</button>
+                <button class="feature-btn" data-feature="animation" data-type="float">🎈 Float</button>
+                <button class="feature-btn" data-feature="animation" data-type="pulse">💓 Pulse</button>
+                <button class="feature-btn" data-feature="animation" data-type="wobble">🔄 Wobble</button>
+                <button class="feature-btn" data-feature="animation" data-type="slide">🛹 Slide</button>
+                <button class="feature-btn" data-feature="animation" data-type="none">⬜ None</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <!-- Step 5: Character Info & Special Abilities -->
+<div class="wizard-step" id="step-5">
+    <h2>Character Information & Powers</h2>
+    <div class="info-controls">
+        <div class="control-group">
+            <label for="char-name">✨ Character Name</label>
+            <input type="text" id="char-name" placeholder="My Awesome Character">
+        </div>
+        
+        <div class="control-group">
+            <label for="char-description">📖 Character Story</label>
+            <textarea id="char-description" placeholder="Tell us about your character's background, personality, and what makes them special..."></textarea>
+        </div>
+        
+        <div class="control-group">
+            <label>🏷️ Category</label>
+            <select id="char-category">
+                <option value="custom">Custom</option>
+                <option value="geometric">Geometric</option>
+                <option value="organic">Organic</option>
+                <option value="mechanical">Mechanical</option>
+                <option value="food">Food & Treats</option>
+                <option value="creature">Fantasy Creatures</option>
+                <option value="space">Space & Sci-Fi</option>
+                <option value="nature">Nature & Plants</option>
+                <option value="action">Action Heroes</option>
+                <option value="cute">Cute & Kawaii</option>
+                <option value="spooky">Spooky & Horror</option>
+                <option value="elemental">Elemental</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>🚀 Quick-Pick Super Powers</label>
+            <div class="power-presets">
+                <button type="button" class="power-preset" data-powers="Speed Boost,Lightning Dash,Quick Reflexes">⚡ Speedster</button>
+                <button type="button" class="power-preset" data-powers="Fire Breath,Heat Vision,Flame Aura">🔥 Fire Master</button>
+                <button type="button" class="power-preset" data-powers="Ice Shield,Freeze Blast,Snow Storm">❄️ Ice Warrior</button>
+                <button type="button" class="power-preset" data-powers="Flight,Wind Control,Sky Dance">🌪️ Air Elemental</button>
+                <button type="button" class="power-preset" data-powers="Earth Shake,Rock Armor,Stone Throw">🪨 Earth Guardian</button>
+                <button type="button" class="power-preset" data-powers="Teleport,Phase Shift,Void Walk">🌌 Space Mage</button>
+                <button type="button" class="power-preset" data-powers="Laser Beam,Tech Hack,Energy Shield">🤖 Cyber Hero</button>
+                <button type="button" class="power-preset" data-powers="Heal Aura,Life Force,Nature's Blessing">🌿 Life Healer</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>🦸 Custom Special Abilities</label>
+            <div class="abilities-list">
+                <div class="ability-input">
+                    <input type="text" placeholder="e.g., Speed Boost, Double Jump, Fire Trail">
+                    <button class="remove-ability" type="button">×</button>
+                </div>
+            </div>
+            <button type="button" class="add-ability">+ Add Custom Ability</button>
+        </div>
+        
+        <div class="control-group">
+            <label>⚡ Power Level</label>
+            <input type="range" id="power-level" min="1" max="10" value="5" step="1">
+            <span class="value-display">5</span>
+            <div class="power-level-labels">
+                <span>Rookie</span>
+                <span>Legendary</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>🎨 Character Rarity</label>
+            <select id="char-rarity">
+                <option value="common">⚪ Common</option>
+                <option value="uncommon">🟢 Uncommon</option>
+                <option value="rare">🔵 Rare</option>
+                <option value="epic">🟣 Epic</option>
+                <option value="legendary">🟡 Legendary</option>
+                <option value="mythic">🔴 Mythic</option>
+            </select>
+        </div>
+    </div>
+</div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <h3>Live Preview</h3>
+            <div id="character-preview"></div>
+            <div class="preview-controls">
+                <button id="reset-camera">🎯 Reset View</button>
+                <button id="auto-rotate" class="active">🔄 Auto Rotate</button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="wizard-navigation">
+            <button id="prev-btn" disabled>← Previous</button>
+            <button id="next-btn">Next →</button>
+            <button id="create-btn" style="display: none;">🎨 Create Character</button>
+        </div>
+    </div>
+
+    <script src="wizard.js"></script>
+</body>
+</html>

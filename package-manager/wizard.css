@@ -1,0 +1,895 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+    pointer-events: none;
+    animation: gradientShift 15s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.wizard-container {
+    display: grid;
+    grid-template-areas: 
+        "header header"
+        "content preview"
+        "nav nav";
+    grid-template-columns: 1fr 400px;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh; /* Fixed height instead of min-height */
+    gap: 20px;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+    overflow: hidden; /* Prevent overall container scroll */
+}
+
+/* Header */
+.wizard-header {
+    grid-area: header;
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.wizard-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #4A90E2, #7B68EE, #FF6B9D);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.wizard-progress {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    align-items: center;
+}
+
+.step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.step.active {
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.5);
+    transform: scale(1.1);
+}
+
+.step.completed {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+}
+
+.step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Content */
+.wizard-content {
+    grid-area: content;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 30px;
+    overflow-y: auto;
+    min-height: 0; /* Allow it to shrink */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive Template Grid */
+@media (max-width: 1200px) {
+    .template-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+    
+    .template-card {
+        min-height: 120px;
+        padding: 15px;
+    }
+    
+    .template-preview {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .template-card h3 {
+        font-size: 1rem;
+    }
+    
+    .template-card p {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .template-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        padding: 5px;
+    }
+    
+    .template-card {
+        min-height: 100px;
+        padding: 12px;
+    }
+    
+    .template-preview {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+    
+    .template-card h3 {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+    
+    .template-card p {
+        font-size: 0.75rem;
+    }
+}
+
+/* Make the grid more dense when there are many templates */
+@media (min-width: 1400px) {
+    .template-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 18px;
+    }
+    
+    .template-card {
+        min-height: 160px;
+        padding: 25px;
+    }
+    
+    .template-preview {
+        font-size: 3.5rem;
+        margin-bottom: 15px;
+    }
+    
+    .template-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .template-card p {
+        font-size: 0.9rem;
+    }
+}
+
+.wizard-step {
+    display: none;
+    animation: fadeIn 0.5s ease-in-out;
+    overflow-y: auto; /* Make individual steps scrollable */
+    flex: 1; /* Take available space */
+    min-height: 0; /* Allow shrinking */
+}
+
+.wizard-step.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Step Content Areas - Make them properly scrollable */
+#step-4, #step-5 {
+    gap: 15px; /* Add spacing between sections */
+}
+
+#step-4 .features-controls,
+#step-5 .info-controls {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 10px; /* Space for scrollbar */
+}
+
+/* Better spacing for feature sections */
+.feature-section {
+    margin-bottom: 20px; /* Reduced from 25px */
+    padding: 12px; /* Reduced from 15px */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.feature-section h3 {
+    font-size: 1rem; /* Slightly smaller */
+    margin-bottom: 10px; /* Reduced from 12px */
+    color: #60a5fa;
+    text-align: center;
+}
+
+/* Compact feature options */
+.feature-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Slightly smaller */
+    gap: 6px; /* Reduced from 8px */
+    margin-bottom: 10px; /* Reduced from 15px */
+}
+
+.feature-btn {
+    font-size: 11px; /* Slightly smaller text */
+    padding: 6px 8px; /* Reduced padding */
+    text-align: center;
+}
+
+/* Enhanced Template Cards */
+.template-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 140px; /* Ensure minimum height for readability */
+    position: relative;
+    overflow: hidden;
+}
+
+.template-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(74, 144, 226, 0.5);
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+}
+
+.template-card.selected {
+    border-color: #4A90E2;
+    background: rgba(74, 144, 226, 0.2);
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
+    transform: scale(1.05);
+}
+
+.template-preview {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    flex-shrink: 0;
+}
+
+.template-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #f1f5f9;
+    flex-shrink: 0;
+}
+
+.template-card p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    line-height: 1.3;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Make Step 1 specifically use flexbox for template selection */
+#step-1 {
+    display: none;
+}
+
+#step-1.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#step-1 h2 {
+    flex-shrink: 0; /* Don't let the header shrink */
+    margin-bottom: 20px;
+}
+
+#step-1 .template-grid {
+    flex: 1; /* Template grid takes all remaining space */
+    min-height: 0; /* Allow it to shrink if needed */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-step h2 {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* Template Grid */
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.template-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.template-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(74, 144, 226, 0.5);
+}
+
+.template-card.selected {
+    border-color: #4A90E2;
+    background: rgba(74, 144, 226, 0.2);
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.3);
+}
+
+.template-preview {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.template-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.template-card p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+/* Controls */
+.control-group {
+    margin-bottom: 25px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.shape-options, .material-options, .feature-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.shape-btn, .material-btn, .feature-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.shape-btn:hover, .material-btn:hover, .feature-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(74, 144, 226, 0.5);
+}
+
+.shape-btn.active, .material-btn.active, .feature-btn.active {
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    border-color: #4A90E2;
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+}
+
+input[type="range"] {
+    width: 100%;
+    margin: 10px 0;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+}
+
+.value-display {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #4A90E2;
+}
+
+/* Color Controls */
+input[type="color"] {
+    width: 60px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 15px;
+}
+
+.color-presets {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.color-preset {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.color-preset:hover {
+    transform: scale(1.1);
+    border-color: white;
+}
+
+/* Feature Sections */
+.feature-section {
+    margin-bottom: 30px;
+}
+
+.feature-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: #4A90E2;
+}
+
+/* Info Controls */
+input[type="text"], textarea, select {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+input[type="text"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #4A90E2;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Abilities */
+.abilities-list {
+    margin-bottom: 15px;
+}
+
+.ability-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ability-input input {
+    flex: 1;
+}
+
+.remove-ability {
+    background: #ff4757;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    width: 30px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.add-ability {
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.add-ability:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+}
+
+/* Preview Panel */
+.preview-panel {
+    grid-area: preview;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow shrinking */
+}
+
+.preview-panel h3 {
+    flex-shrink: 0; /* Don't let header shrink */
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+#character-preview {
+    flex: 1;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    min-height: 300px; /* Minimum size */
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-controls {
+    flex-shrink: 0; /* Don't let controls shrink */
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.preview-controls button {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.preview-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.preview-controls button.active {
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    border-color: #4A90E2;
+}
+
+/* Navigation - Fixed at bottom */
+.wizard-navigation {
+    grid-area: nav;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.95); /* Slightly more opaque */
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    margin: 0; /* Remove any margins */
+    flex-shrink: 0; /* Never shrink the navigation */
+}
+
+.wizard-navigation button {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    min-width: 150px;
+}
+
+#prev-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+#prev-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+#prev-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#next-btn, #create-btn {
+    background: linear-gradient(45deg, #4A90E2, #7B68EE);
+    color: white;
+    border: 2px solid #4A90E2;
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+}
+
+#next-btn:hover, #create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .wizard-container {
+        grid-template-areas: 
+            "header"
+            "content"
+            "preview"
+            "nav";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+    }
+    
+    .preview-panel {
+        max-height: 400px; /* Limit preview height on smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .wizard-header h1 {
+        font-size: 2rem;
+    }
+    
+    .wizard-progress {
+        gap: 10px;
+    }
+    
+    .step {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+    
+    .template-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    
+    .shape-options, .material-options, .feature-options {
+        flex-direction: column;
+    }
+    
+    .wizard-navigation {
+        flex-direction: column;
+    }
+
+    .feature-options {
+        grid-template-columns: 1fr; /* Stack on mobile */
+    }
+}
+
+/* Custom Scrollbars for Step Content */
+.wizard-step::-webkit-scrollbar,
+.features-controls::-webkit-scrollbar,
+.info-controls::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wizard-step::-webkit-scrollbar-track,
+.features-controls::-webkit-scrollbar-track,
+.info-controls::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.wizard-step::-webkit-scrollbar-thumb,
+.features-controls::-webkit-scrollbar-thumb,
+.info-controls::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #4A90E2, #7B68EE);
+    border-radius: 3px;
+}
+
+.wizard-step::-webkit-scrollbar-thumb:hover,
+.features-controls::-webkit-scrollbar-thumb:hover,
+.info-controls::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #60a5fa, #8b5cf6);
+}
+
+/* Enhanced Template Grid - Full Height */
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    flex: 1; /* Take all available space */
+    overflow-y: auto;
+    align-content: start; /* Align cards to top when there's extra space */
+    padding: 10px; /* Add some padding for breathing room */
+}
+
+/* Power Presets */
+.power-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.power-preset {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    border: 2px solid rgba(124, 58, 237, 0.3);
+    border-radius: 12px;
+    color: white;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.power-preset:hover {
+    background: linear-gradient(135deg, #5b21b6, #4c1d95);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+
+.power-preset:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* Power Level Styling */
+.power-level-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Enhanced Shape Options */
+.shape-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.shape-btn {
+    font-size: 13px;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+/* Enhanced Feature Options */
+.feature-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.feature-btn {
+    font-size: 12px;
+    padding: 8px 10px;
+    text-align: center;
+}
+
+/* Feature Section Spacing */
+.feature-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.feature-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #60a5fa;
+    text-align: center;
+}
+
+/* Wizard Step Scrolling */
+.wizard-content {
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+/* Enhanced scrollbar for wizard */
+.wizard-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wizard-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.wizard-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #4A90E2, #7B68EE);
+    border-radius: 4px;
+}
+
+.wizard-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #60a5fa, #8b5cf6);
+}
+
+/* Responsive updates */
+@media (max-width: 768px) {
+    .template-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+    }
+    
+    .power-presets {
+        grid-template-columns: 1fr;
+    }
+    
+    .shape-options, .feature-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .shape-btn, .feature-btn {
+        font-size: 14px;
+    }
+}

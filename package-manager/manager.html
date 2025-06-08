@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Running Blitz - Character Package Manager</title>
+    <link rel="stylesheet" href="manager.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+// OrbitControls for Three.js r128
+THREE.OrbitControls = function ( object, domElement ) {
+    this.object = object;
+    this.domElement = domElement || document;
+
+    // Set to false to disable this control
+    this.enabled = true;
+
+    // "target" sets the location of focus, where the camera orbits around
+    this.target = new THREE.Vector3();
+
+    // How far you can dolly in and out ( PerspectiveCamera only )
+    this.minDistance = 0;
+    this.maxDistance = Infinity;
+
+    // How far you can zoom in and out ( OrthographicCamera only )
+    this.minZoom = 0;
+    this.maxZoom = Infinity;
+
+    // How far you can orbit vertically, upper and lower limits.
+    this.minPolarAngle = 0; // radians
+    this.maxPolarAngle = Math.PI; // radians
+
+    // How far you can orbit horizontally, upper and lower limits.
+    this.minAzimuthAngle = - Infinity; // radians
+    this.maxAzimuthAngle = Infinity; // radians
+
+    // Set to true to enable damping (inertia)
+    this.enableDamping = false;
+    this.dampingFactor = 0.05;
+
+    // This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
+    this.enableZoom = true;
+    this.zoomSpeed = 1.0;
+
+    // Set to false to disable rotating
+    this.enableRotate = true;
+    this.rotateSpeed = 1.0;
+
+    // Set to false to disable panning
+    this.enablePan = true;
+    this.panSpeed = 1.0;
+    this.screenSpacePanning = false; // if true, pan in screen-space
+    this.keyPanSpeed = 7.0;	// pixels moved per arrow key push
+
+    // Set to true to automatically rotate around the target
+    this.autoRotate = false;
+    this.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60
+
+    // Mouse buttons
+    this.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+
+    // Touch fingers
+    this.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+    var scope = this;
+    var changeEvent = { type: 'change' };
+    var startEvent = { type: 'start' };
+    var endEvent = { type: 'end' };
+
+    var STATE = {
+        NONE: - 1,
+        ROTATE: 0,
+        DOLLY: 1,
+        PAN: 2,
+        TOUCH_ROTATE: 3,
+        TOUCH_PAN: 4,
+        TOUCH_DOLLY_PAN: 5,
+        TOUCH_DOLLY_ROTATE: 6
+    };
+
+    var state = STATE.NONE;
+
+    var EPS = 0.000001;
+
+    // current position in spherical coordinates
+    var spherical = new THREE.Spherical();
+    var sphericalDelta = new THREE.Spherical();
+
+    var scale = 1;
+    var panOffset = new THREE.Vector3();
+    var zoomChanged = false;
+
+    var rotateStart = new THREE.Vector2();
+    var rotateEnd = new THREE.Vector2();
+    var rotateDelta = new THREE.Vector2();
+
+    var panStart = new THREE.Vector2();
+    var panEnd = new THREE.Vector2();
+    var panDelta = new THREE.Vector2();
+
+    var dollyStart = new THREE.Vector2();
+    var dollyEnd = new THREE.Vector2();
+    var dollyDelta = new THREE.Vector2();
+
+    // Core methods
+    this.update = function () {
+        var offset = new THREE.Vector3();
+        var quat = new THREE.Quaternion().setFromUnitVectors( object.up, new THREE.Vector3( 0, 1, 0 ) );
+        var quatInverse = quat.clone().invert();
+
+        var lastPosition = new THREE.Vector3();
+        var lastQuaternion = new THREE.Quaternion();
+
+        return function update() {
+            var position = scope.object.position;
+            offset.copy( position ).sub( scope.target );
+            offset.applyQuaternion( quat );
+            spherical.setFromVector3( offset );
+
+            if ( scope.autoRotate && state === STATE.NONE ) {
+                rotateLeft( getAutoRotationAngle() );
+            }
+
+            if ( scope.enableDamping ) {
+                spherical.theta += sphericalDelta.theta * scope.dampingFactor;
+                spherical.phi += sphericalDelta.phi * scope.dampingFactor;
+            } else {
+                spherical.theta += sphericalDelta.theta;
+                spherical.phi += sphericalDelta.phi;
+            }
+
+            spherical.theta = Math.max( scope.minAzimuthAngle, Math.min( scope.maxAzimuthAngle, spherical.theta ) );
+            spherical.phi = Math.max( scope.minPolarAngle, Math.min( scope.maxPolarAngle, spherical.phi ) );
+            spherical.makeSafe();
+            spherical.radius *= scale;
+            spherical.radius = Math.max( scope.minDistance, Math.min( scope.maxDistance, spherical.radius ) );
+
+            if ( scope.enableDamping === true ) {
+                scope.target.addScaledVector( panOffset, scope.dampingFactor );
+            } else {
+                scope.target.add( panOffset );
+            }
+
+            offset.setFromSpherical( spherical );
+            offset.applyQuaternion( quatInverse );
+            position.copy( scope.target ).add( offset );
+            scope.object.lookAt( scope.target );
+
+            if ( scope.enableDamping === true ) {
+                sphericalDelta.theta *= ( 1 - scope.dampingFactor );
+                sphericalDelta.phi *= ( 1 - scope.dampingFactor );
+                panOffset.multiplyScalar( 1 - scope.dampingFactor );
+            } else {
+                sphericalDelta.set( 0, 0, 0 );
+                panOffset.set( 0, 0, 0 );
+            }
+
+            scale = 1;
+
+            if ( zoomChanged ||
+                lastPosition.distanceToSquared( scope.object.position ) > EPS ||
+                8 * ( 1 - lastQuaternion.dot( scope.object.quaternion ) ) > EPS ) {
+                scope.dispatchEvent( changeEvent );
+                lastPosition.copy( scope.object.position );
+                lastQuaternion.copy( scope.object.quaternion );
+                zoomChanged = false;
+                return true;
+            }
+            return false;
+        };
+    }();
+
+    this.dispose = function () {
+        scope.domElement.removeEventListener( 'contextmenu', onContextMenu, false );
+        scope.domElement.removeEventListener( 'mousedown', onMouseDown, false );
+        scope.domElement.removeEventListener( 'wheel', onMouseWheel, false );
+        scope.domElement.removeEventListener( 'touchstart', onTouchStart, false );
+        scope.domElement.removeEventListener( 'touchend', onTouchEnd, false );
+        scope.domElement.removeEventListener( 'touchmove', onTouchMove, false );
+        document.removeEventListener( 'mousemove', onMouseMove, false );
+        document.removeEventListener( 'mouseup', onMouseUp, false );
+        scope.domElement.removeEventListener( 'keydown', onKeyDown, false );
+    };
+
+    // Helper functions
+    function getAutoRotationAngle() {
+        return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+    }
+
+    function rotateLeft( angle ) {
+        sphericalDelta.theta -= angle;
+    }
+
+    function rotateUp( angle ) {
+        sphericalDelta.phi -= angle;
+    }
+
+    // Event handlers
+    function onMouseDown( event ) {
+        if ( scope.enabled === false ) return;
+        
+        event.preventDefault();
+        
+        switch ( event.button ) {
+            case 0:
+                if ( scope.enableRotate === false ) return;
+                state = STATE.ROTATE;
+                rotateStart.set( event.clientX, event.clientY );
+                break;
+            case 1:
+                if ( scope.enableZoom === false ) return;
+                state = STATE.DOLLY;
+                dollyStart.set( event.clientX, event.clientY );
+                break;
+            case 2:
+                if ( scope.enablePan === false ) return;
+                state = STATE.PAN;
+                panStart.set( event.clientX, event.clientY );
+                break;
+        }
+        
+        if ( state !== STATE.NONE ) {
+            document.addEventListener( 'mousemove', onMouseMove, false );
+            document.addEventListener( 'mouseup', onMouseUp, false );
+            scope.dispatchEvent( startEvent );
+        }
+    }
+
+    function onMouseMove( event ) {
+        if ( scope.enabled === false ) return;
+        
+        event.preventDefault();
+        
+        switch ( state ) {
+            case STATE.ROTATE:
+                if ( scope.enableRotate === false ) return;
+                rotateEnd.set( event.clientX, event.clientY );
+                rotateDelta.subVectors( rotateEnd, rotateStart ).multiplyScalar( scope.rotateSpeed );
+                var element = scope.domElement;
+                rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientHeight );
+                rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight );
+                rotateStart.copy( rotateEnd );
+                scope.update();
+                break;
+            case STATE.DOLLY:
+                if ( scope.enableZoom === false ) return;
+                dollyEnd.set( event.clientX, event.clientY );
+                dollyDelta.subVectors( dollyEnd, dollyStart );
+                if ( dollyDelta.y > 0 ) {
+                    scale *= 1.1;
+                } else if ( dollyDelta.y < 0 ) {
+                    scale /= 1.1;
+                }
+                dollyStart.copy( dollyEnd );
+                scope.update();
+                break;
+            case STATE.PAN:
+                if ( scope.enablePan === false ) return;
+                panEnd.set( event.clientX, event.clientY );
+                panDelta.subVectors( panEnd, panStart ).multiplyScalar( scope.panSpeed );
+                panOffset.x -= panDelta.x;
+                panOffset.y += panDelta.y;
+                panStart.copy( panEnd );
+                scope.update();
+                break;
+        }
+    }
+
+    function onMouseUp( event ) {
+        if ( scope.enabled === false ) return;
+        document.removeEventListener( 'mousemove', onMouseMove, false );
+        document.removeEventListener( 'mouseup', onMouseUp, false );
+        scope.dispatchEvent( endEvent );
+        state = STATE.NONE;
+    }
+
+    function onMouseWheel( event ) {
+        if ( scope.enabled === false || scope.enableZoom === false || ( state !== STATE.NONE && state !== STATE.ROTATE ) ) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        scope.dispatchEvent( startEvent );
+        
+        if ( event.deltaY < 0 ) {
+            scale /= 1.1;
+        } else if ( event.deltaY > 0 ) {
+            scale *= 1.1;
+        }
+        
+        scope.update();
+        scope.dispatchEvent( endEvent );
+    }
+
+    function onTouchStart( event ) {
+        if ( scope.enabled === false ) return;
+        
+        event.preventDefault();
+        
+        switch ( event.touches.length ) {
+            case 1:
+                if ( scope.enableRotate === false ) return;
+                state = STATE.TOUCH_ROTATE;
+                rotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                break;
+            case 2:
+                if ( scope.enableZoom === false && scope.enablePan === false ) return;
+                state = STATE.TOUCH_DOLLY_PAN;
+                var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+                var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+                dollyStart.set( 0, Math.sqrt( dx * dx + dy * dy ) );
+                var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+                var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+                panStart.set( x, y );
+                break;
+        }
+        
+        if ( state !== STATE.NONE ) {
+            scope.dispatchEvent( startEvent );
+        }
+    }
+
+    function onTouchMove( event ) {
+        if ( scope.enabled === false ) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        switch ( state ) {
+            case STATE.TOUCH_ROTATE:
+                if ( scope.enableRotate === false ) return;
+                rotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                rotateDelta.subVectors( rotateEnd, rotateStart ).multiplyScalar( scope.rotateSpeed );
+                var element = scope.domElement;
+                rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientHeight );
+                rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight );
+                rotateStart.copy( rotateEnd );
+                break;
+            case STATE.TOUCH_DOLLY_PAN:
+                if ( scope.enableZoom === false && scope.enablePan === false ) return;
+                var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+                var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+                dollyEnd.set( 0, Math.sqrt( dx * dx + dy * dy ) );
+                dollyDelta.set( 0, Math.pow( dollyEnd.y / dollyStart.y, scope.zoomSpeed ) );
+                scale *= dollyDelta.y;
+                dollyStart.copy( dollyEnd );
+                var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+                var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+                panEnd.set( x, y );
+                panDelta.subVectors( panEnd, panStart ).multiplyScalar( scope.panSpeed );
+                panOffset.x -= panDelta.x;
+                panOffset.y += panDelta.y;
+                panStart.copy( panEnd );
+                break;
+        }
+        
+        scope.update();
+    }
+
+    function onTouchEnd( event ) {
+        if ( scope.enabled === false ) return;
+        scope.dispatchEvent( endEvent );
+        state = STATE.NONE;
+    }
+
+    function onContextMenu( event ) {
+        if ( scope.enabled === false ) return;
+        event.preventDefault();
+    }
+
+    function onKeyDown( event ) {
+        if ( scope.enabled === false || scope.enablePan === false ) return;
+        
+        switch ( event.code ) {
+            case 'ArrowUp':
+                panOffset.y += scope.keyPanSpeed;
+                scope.update();
+                break;
+            case 'ArrowBottom':
+                panOffset.y -= scope.keyPanSpeed;
+                scope.update();
+                break;
+            case 'ArrowLeft':
+                panOffset.x += scope.keyPanSpeed;
+                scope.update();
+                break;
+            case 'ArrowRight':
+                panOffset.x -= scope.keyPanSpeed;
+                scope.update();
+                break;
+        }
+    }
+
+    // Event listeners
+    scope.domElement.addEventListener( 'contextmenu', onContextMenu, false );
+    scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
+    scope.domElement.addEventListener( 'wheel', onMouseWheel, false );
+    scope.domElement.addEventListener( 'touchstart', onTouchStart, false );
+    scope.domElement.addEventListener( 'touchend', onTouchEnd, false );
+    scope.domElement.addEventListener( 'touchmove', onTouchMove, false );
+
+    // Initialize controls
+    this.update();
+};
+
+// Inherit from EventDispatcher
+THREE.OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+THREE.OrbitControls.prototype.constructor = THREE.OrbitControls;
+</script>
+
+    <!-- Add this line after the Three.js script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div class="manager-container">
+        <!-- Header -->
+        <header class="manager-header">
+            <h1>🎮 Running Blitz Character Manager</h1>
+            <div class="header-actions">
+                <button id="saveChanges" class="btn-primary">💾 Save All Changes</button>
+                <button id="createCharacter" class="btn-create">🎨 Create Character</button>
+                <button id="refreshData" class="btn-secondary">🔄 Refresh</button>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="manager-grid">
+            <!-- Left Panel: Active Characters -->
+            <div class="panel active-panel">
+                <h2>🎯 Active Characters</h2>
+                <div class="character-swapper">
+                    <div id="activeCharacters" class="character-list sortable">
+                        <!-- Characters will be populated here -->
+                    </div>
+                    <div class="swapper-controls">
+                        <button id="randomizeOrder" class="btn-fun">🎲 Randomize Order</button>
+                        <button id="reverseOrder" class="btn-fun">↕️ Reverse Order</button>
+                    </div>
+                </div>
+                
+                
+            </div>
+
+            <!-- Center Panel: Available Characters -->
+            <div class="panel available-panel">
+                <h2>📦 Available Characters</h2>
+                <div class="character-browser">
+                    <div class="browser-filters">
+                        <select id="categoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="cute">🥰 Cute</option>
+                            <option value="scary">👻 Scary</option>
+                            <option value="scifi">🚀 Sci-Fi</option>
+                            <option value="nature">🌱 Nature</option>
+                        </select>
+                        <input type="text" id="searchFilter" placeholder="🔍 Search characters...">
+                    </div>
+                    <div id="availableCharacters" class="character-grid">
+    <!-- Available characters will be populated here -->
+</div>
+
+<!-- Deactivated Characters Section -->
+<div class="deactivated-section" id="deactivatedSection" style="display: none;">
+    <h3>😴 Deactivated Characters</h3>
+    <div id="deactivatedCharacters" class="character-list-small">
+        <!-- Deactivated characters will be populated here -->
+    </div>
+</div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Character Preview -->
+    <div class="panel preview-panel">
+        <h2>👀 Character Preview</h2>
+        <div id="previewArea" class="preview-container-large">
+            <div class="preview-placeholder">
+                Select a character to preview
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="statusMessage">Ready</span>
+            <span id="characterCount">Active: 0 | Available: 0</span>
+        </div>
+    </div>
+
+    <script src="manager.js"></script>
+</body>
+</html>
