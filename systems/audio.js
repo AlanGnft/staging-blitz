@@ -37,11 +37,11 @@ function initializeAudio() {
     // Create audio pools for sound effects (3 instances each for overlap)
     // Note: ../assets because we're in the systems folder
     for (let i = 0; i < 3; i++) {
-        soundPool.coin.push(new Audio('../assets/audio/coin.mp3'));
-        soundPool.jump.push(new Audio('../assets/audio/jump.mp3'));
-        soundPool.crash.push(new Audio('../assets/audio/crash.mp3'));
-        soundPool.powerup.push(new Audio('../assets/audio/powerup.mp3'));
-        soundPool.rareCoin.push(new Audio('../assets/audio/rare-coin.mp3'));
+        soundPool.coin.push(new Audio('assets/audio/coin.mp3'));
+        soundPool.jump.push(new Audio('assets/audio/jump.mp3'));
+        soundPool.crash.push(new Audio('assets/audio/crash.mp3'));
+        soundPool.powerup.push(new Audio('assets/audio/powerup.mp3'));
+        soundPool.rareCoin.push(new Audio('assets/audio/rare-coin.mp3'));
     }
     
     // Set volumes for sound effects
@@ -95,7 +95,7 @@ function startBackgroundMusic() {
     
     // Create new audio element for the current track
     // Note: ../assets because we're in the systems folder
-    backgroundMusic = new Audio(`../assets/audio/${currentTrack}-track.mp3`);
+    backgroundMusic = new Audio(`assets/audio/${currentTrack}-track.mp3`);
     backgroundMusic.loop = true;
     backgroundMusic.volume = 0.5; // Adjust as needed
     
