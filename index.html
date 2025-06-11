@@ -4186,6 +4186,21 @@ function applyWorldSettings(world) {
     // Store current world data for other systems to use
     window.currentWorldData = world;
     
+    // Clear existing obstacles from scene
+    obstacles.forEach(obstacle => scene.remove(obstacle));
+    obstacles = [];
+    
+    // Clear the obstacle models cache and reload for new world
+    obstacleModels.clear();
+    currentWorldObstaclesLoaded = false;
+    
+    // Load the new world's obstacles
+    loadWorldObstacles(world.id).then(() => {
+        console.log(`✅ ${world.id} obstacles loaded after world switch`);
+    }).catch(error => {
+        console.error(`Failed to load ${world.id} obstacles:`, error);
+    });
+    
     // IMPORTANT: Recreate the ground with the new world theme
     recreateGroundForWorld();
     
@@ -7453,6 +7468,15 @@ setTimeout(() => {
             // Clear obstacles, coins and streams
             obstacles.forEach(obstacle => scene.remove(obstacle));
             obstacles = [];
+
+            // Reload obstacles if switching worlds or not loaded
+            if (!currentWorldObstaclesLoaded) {
+                loadWorldObstacles(currentWorld).then(() => {
+                    console.log(`✅ Obstacles reloaded for ${currentWorld} after restart`);
+                }).catch(error => {
+                    console.error(`Failed to reload obstacles:`, error);
+                });
+            }
             
             coins.forEach(coin => scene.remove(coin));
             coins = [];
@@ -8523,34 +8547,31 @@ if (isAncientRuin) {
 // For quicksand, only check collision with the main pit area
 const isQuicksand = obstacles.includes(object) && object.userData.obstacleType === 'quicksand';
 
-if (isQuicksand) {
-    // Find the main quicksand pit (the CircleGeometry at y = -0.1)
-    const mainPit = object.children.find(child => 
-        child.geometry && child.geometry.type === 'CircleGeometry' && child.position.y < 0
+// For quicksand
+if (object.name === 'quicksand' || object.userData.obstacleType === 'quicksand') {
+    // Get the center position of the quicksand
+    const quicksandCenter = new THREE.Vector3();
+    object.getWorldPosition(quicksandCenter);
+    
+    const playerPos = new THREE.Vector3();
+    player.getWorldPosition(playerPos);
+    
+    // Only check X and Z distance (ignore Y for ground-level check)
+    const distanceXZ = Math.sqrt(
+        Math.pow(playerPos.x - quicksandCenter.x, 2) + 
+        Math.pow(playerPos.z - quicksandCenter.z, 2)
     );
     
-    if (mainPit) {
-        // Get world positions to check distance first
-        const playerPos = new THREE.Vector3();
-        const pitPos = new THREE.Vector3();
-        player.getWorldPosition(playerPos);
-        mainPit.getWorldPosition(pitPos);
-        
-        const distance = playerPos.distanceTo(pitPos);
-        debug('🏜️ Quicksand distance check:', distance, 'Player at:', playerPos.x, 'Pit at:', pitPos.x);
-        
-        // Only check collision if player is close to the pit center
-        if (distance < 1.0) {
-            // Can jump over quicksand if high enough
-            if (jumping && player.position.y > 0.8) {
-                debug('🦘 Jumped over quicksand!');
-                return false;
-            }
-            debug('💥 Hit quicksand pit!');
-            return true;
+    // Only collide if very close to center (ignore bones on the edges)
+    if (distanceXZ < 0.8) {
+        if (jumping && player.position.y > 0.8) {
+            debug('🦘 Jumped over quicksand!');
+            return false;
         }
-        return false; // No collision if too far from pit center
+        debug('💥 Fell into quicksand!');
+        return true;
     }
+    return false;
 }
     
     // For Monster character, use precise collision with main body only
@@ -8646,41 +8667,33 @@ if (meteors.includes(object)) {
 }
 
 // Check if this is a fallen tree - only collide with the trunk
-const isFallenTree = obstacles.includes(object) && object.userData.obstacleType === 'fallenTree';
+const isFallenTree = (object.name === 'fallenTree' || object.userData.obstacleType === 'fallenTree');
 
 if (isFallenTree) {
-    // Find the trunk mesh in the GLB model
-    let trunk = null;
-    object.traverse((child) => {
-        if (child.isMesh && child.name && 
-            (child.name.includes('trunk') || 
-             child.name.includes('fallenTree_mesh') && !child.name.includes('leaf'))) {
-            trunk = child;
-        }
-    });
-    if (trunk) {
-        // Get world positions
-        const playerPos = new THREE.Vector3();
-        const trunkPos = new THREE.Vector3();
-        player.getWorldPosition(playerPos);
-        trunk.getWorldPosition(trunkPos);
-        
-        // Only check collision if player is close to the trunk's actual position
-        const distance = playerPos.distanceTo(trunkPos);
-        debug('🌳 Fallen tree distance check:', distance, 'Player at:', playerPos.x, 'Trunk at:', trunkPos.x);
-        
-        // Much stricter collision - only collide if very close to trunk center
-        if (distance < 1.0) {
-            // Can jump over fallen trees
-            if (jumping && player.position.y > 1.0) {
-                debug('🦘 Jumped over fallen tree!');
-                return false;
-            }
-            debug('💥 Hit fallen tree trunk!');
-            return true;
-        }
-        return false; // No collision if too far from trunk
+    // For fallen tree, create a simplified collision box that only covers the trunk area
+    const treeCenter = new THREE.Vector3();
+    object.getWorldPosition(treeCenter);
+    
+    // Create a box that represents just the trunk (not the full object with leaves)
+    const trunkBox = new THREE.Box3();
+    trunkBox.setFromCenterAndSize(
+        treeCenter,
+        new THREE.Vector3(4, 0.8, 0.8) // Trunk is long (4 units) but narrow
+    );
+    
+    const playerBox = new THREE.Box3().setFromObject(player);
+    
+    // Can jump over fallen trees
+    if (jumping && player.position.y > 1.0) {
+        debug('🦘 Jumped over fallen tree!');
+        return false;
     }
+    
+    if (playerBox.intersectsBox(trunkBox)) {
+        debug('💥 Hit fallen tree trunk!');
+        return true;
+    }
+    return false;
 }
 
 
