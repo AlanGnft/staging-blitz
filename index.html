@@ -1646,6 +1646,26 @@ if (obstacleContainer && obstacleContainer.children.length > 0) {
 
 console.log(`Total obstacles cached for ${worldName}:`, obstacleModels.size);
 console.log('Cached obstacles:', Array.from(obstacleModels.keys()));
+// Validate that only correct obstacles are loaded for each world
+const validObstacles = {
+    classic: ['rock', 'treeStump', 'log', 'bush', 'spikes'],
+    forest: ['treeRoot', 'thornBush', 'fallenBranch', 'mushroomRing', 'puddlePatch'],
+    desert: ['cactus', 'sandDune', 'quicksand', 'ancientRuin']
+};
+
+const expectedObstacles = validObstacles[worldName] || [];
+const loadedObstacles = Array.from(obstacleModels.keys());
+
+// Remove any obstacles that don't belong to this world
+loadedObstacles.forEach(obstacleName => {
+    if (!expectedObstacles.includes(obstacleName)) {
+        console.warn(`⚠️ Removing invalid obstacle "${obstacleName}" from ${worldName} world`);
+        obstacleModels.delete(obstacleName);
+    }
+});
+
+console.log(`✅ Validated obstacles for ${worldName}:`, Array.from(obstacleModels.keys()));
+
 console.log('=== END DETAILED STRUCTURE ===');
                 
                 currentWorldObstaclesLoaded = true;
@@ -8670,29 +8690,54 @@ if (meteors.includes(object)) {
 const isFallenTree = (object.name === 'fallenTree' || object.userData.obstacleType === 'fallenTree');
 
 if (isFallenTree) {
-    // For fallen tree, create a simplified collision box that only covers the trunk area
+    // Get player position for distance check
+    const playerPos = new THREE.Vector3();
+    player.getWorldPosition(playerPos);
+    
+    // Get tree center position
     const treeCenter = new THREE.Vector3();
     object.getWorldPosition(treeCenter);
     
-    // Create a box that represents just the trunk (not the full object with leaves)
+    // First check if player is even close enough to bother with detailed collision
+    const distanceToTree = playerPos.distanceTo(treeCenter);
+    if (distanceToTree > 3) {
+        return false; // Too far away to collide
+    }
+    
+    // Create a narrow collision box for just the trunk
+    // The trunk is horizontal, so it's long in X direction, narrow in Z
     const trunkBox = new THREE.Box3();
-    trunkBox.setFromCenterAndSize(
-        treeCenter,
-        new THREE.Vector3(4, 0.8, 0.8) // Trunk is long (4 units) but narrow
+    
+    // Adjust these values based on your fallen tree model orientation
+    // This assumes the tree is lying horizontally along the X axis
+    const trunkMin = new THREE.Vector3(
+        treeCenter.x - 2,    // Half length of trunk
+        treeCenter.y - 0.4,  // Bottom of trunk
+        treeCenter.z - 0.4   // Half width of trunk
+    );
+    const trunkMax = new THREE.Vector3(
+        treeCenter.x + 2,    // Half length of trunk
+        treeCenter.y + 0.4,  // Top of trunk
+        treeCenter.z + 0.4   // Half width of trunk
     );
     
+    trunkBox.set(trunkMin, trunkMax);
+    
+    // Get player bounding box
     const playerBox = new THREE.Box3().setFromObject(player);
     
-    // Can jump over fallen trees
+    // Check if player can jump over
     if (jumping && player.position.y > 1.0) {
         debug('🦘 Jumped over fallen tree!');
         return false;
     }
     
+    // Check collision with trunk only
     if (playerBox.intersectsBox(trunkBox)) {
         debug('💥 Hit fallen tree trunk!');
         return true;
     }
+    
     return false;
 }
 
