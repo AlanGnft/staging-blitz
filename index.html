@@ -1403,6 +1403,9 @@ firebase.initializeApp(firebaseConfig);
     <!-- ADD THIS LINE - GLTFExporter -->
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/exporters/GLTFExporter.js"></script>
 
+<!-- Add this line after your THREE.js script -->
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+
 
  
 
@@ -1427,6 +1430,8 @@ firebase.initializeApp(firebaseConfig);
 <!--<script src="obstacle-pack-converter.js"></script>   OBSTACLE GLB CONVERTER -->
 <script src="systems/audio.js"></script>
 <script src="systems/powerups.js"></script>
+<script src="systems/collision.js"></script>
+
 
 
 
@@ -1542,6 +1547,83 @@ let characterNames = [
     "apple", "carrot", "pumpkin", "happyface", "monster", "atom", "slime", "ufo", "robot", "dragon", "ghost", "creature"
     // END CHARACTER ROSTER INJECTION POINT
 ];
+
+
+// ==================== GLB OBSTACLE SYSTEM ====================
+// Add this with your other game variables at the top
+
+// GLB Obstacle Loading System
+const obstacleModels = new Map();
+const worldObstaclePacks = {
+    classic: 'assets/obstacles/obstacles_classic_mobile.glb',
+    forest: 'assets/obstacles/obstacles_forest_mobile.glb',
+    desert: 'assets/obstacles/obstacles_desert_mobile.glb'
+};
+let currentWorldObstaclesLoaded = false;
+
+// Load obstacle pack for a specific world
+async function loadWorldObstacles(worldName) {
+    console.log(`📦 Loading ${worldName} obstacles...`);
+    
+    // Clear previous obstacles from cache
+    obstacleModels.clear();
+    currentWorldObstaclesLoaded = false;
+    
+    return new Promise((resolve, reject) => {
+        const loader = new THREE.GLTFLoader();
+        const packPath = worldObstaclePacks[worldName] || worldObstaclePacks.classic;
+        
+        loader.load(
+            packPath,
+            function(gltf) {
+                console.log(`✅ Loaded ${worldName} obstacle pack`);
+                
+                // Store each obstacle type in the cache
+                gltf.scene.traverse((child) => {
+                    if (child.name && child.isMesh) {
+                        // Clone the geometry and material for reuse
+                        const model = child.clone();
+                        model.geometry = child.geometry;
+                        model.material = child.material.clone();
+                        
+                        obstacleModels.set(child.name, model);
+                        console.log(`📦 Cached obstacle: ${child.name}`);
+                    }
+                });
+                
+                currentWorldObstaclesLoaded = true;
+                resolve();
+            },
+            function(progress) {
+                // Progress callback
+                if (progress.total > 0) {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                    console.log(`Loading ${worldName} obstacles: ${percent}%`);
+                }
+            },
+            function(error) {
+                console.error(`Failed to load ${worldName} obstacles:`, error);
+                currentWorldObstaclesLoaded = false;
+                reject(error);
+            }
+        );
+    });
+}
+
+// Get a clone of a specific obstacle type
+function getObstacleFromGLB(obstacleType) {
+    const model = obstacleModels.get(obstacleType);
+    if (model) {
+        const clone = model.clone();
+        // Ensure material is also cloned for independent manipulation
+        if (clone.material) {
+            clone.material = clone.material.clone();
+        }
+        return clone;
+    }
+    console.warn(`Obstacle type "${obstacleType}" not found in pack`);
+    return null;
+}
 
 // ==================== DEBUG SYSTEM ====================
 // Control all console logging from one place
@@ -2131,6 +2213,14 @@ loadLeaderboard();
 
 // Initialize object pools for performance
 initializeObjectPools();
+
+// ADD THIS: Load obstacles for the default world
+loadWorldObstacles(currentWorld || 'classic').then(() => {
+    console.log('✅ Initial obstacles loaded');
+}).catch(error => {
+    console.error('Failed to load initial obstacles:', error);
+    // Game can continue without obstacles in case of error
+});
             
             // Create scene
             scene = new THREE.Scene();
@@ -8311,351 +8401,6 @@ for (let i = 0; i < 3; i++) {
 }
 
         
-// ==================== COLLISION SYSTEM ====================
-// Collision detection, hit testing, and collision response
-// Dependencies: Player Controls, Obstacle System, Power-up System
-// Functions: checkCollision(), checkSimpleCollision(), collision handling logic
-
-        // Smart collision - early exit for distant objects
-function fastCollisionCheck(object1, object2, threshold = 3.0) {
-    const dx = object1.position.x - object2.position.x;
-    const dy = object1.position.y - object2.position.y;
-    const dz = object1.position.z - object2.position.z;
-    const distanceSquared = dx * dx + dy * dy + dz * dz;
-    
-    // Early exit if objects are too far apart
-    if (distanceSquared > threshold * threshold) {
-        return false;
-    }
-    
-    // Only do expensive collision check if objects are close
-    return checkCollision(object2);
-}
-
-        // Optimized collision detection with caching
-function checkCollision(object) {
-    // For coins and power-ups, use simple distance-based collision (faster)
-    const isCoin = coins.includes(object) || rareCoins.includes(object);
-    const isPowerUp = powerUps.includes(object);
-    
-    if (isCoin || isPowerUp) {
-        return checkSimpleCollision(object, player, 1.5);
-    }
-
-    // For ancient ruins (desert pillars), only check collision with the main pillar - HANDLE FIRST
-const isAncientRuin = obstacles.includes(object) && object.children.some(child => child.userData && child.userData.isMainPillar);
-
-if (isAncientRuin) {
-    // Find the main pillar specifically
-    const mainPillar = object.children.find(child => child.userData && child.userData.isMainPillar);
-    if (mainPillar) {
-        // Get world positions to check distance first
-        const playerPos = new THREE.Vector3();
-        const pillarPos = new THREE.Vector3();
-        player.getWorldPosition(playerPos);
-        mainPillar.getWorldPosition(pillarPos);
-        
-        const distance = playerPos.distanceTo(pillarPos);
-debug('🏛️ Ancient pillar distance check:', distance, 'Player at:', playerPos.x, 'Pillar at:', pillarPos.x);
-        
-        // Only check collision if player is very close to the pillar
-        if (distance < 2.0) {
-            // Create a smaller collision box for just the pillar core
-            const pillarBox = new THREE.Box3().setFromObject(mainPillar);
-            
-            // Shrink the collision box to make it more forgiving
-            const shrinkAmount = 0.3; // Make collision 30% smaller
-            pillarBox.min.x += shrinkAmount;
-            pillarBox.max.x -= shrinkAmount;
-            pillarBox.min.z += shrinkAmount;
-            pillarBox.max.z -= shrinkAmount;
-            
-            const playerBox = new THREE.Box3().setFromObject(player);
-            
-            // Can jump over pillars if high enough
-            if (jumping && player.position.y > 1.2) {
-                debug('🦘 Jumped over ancient pillar!');
-                return false;
-            }
-            
-            const collision = playerBox.intersectsBox(pillarBox);
-            if (collision) {
-                debug('🏛️ Hit ancient pillar!');
-            }
-            return collision;
-        }
-        return false; // No collision if too far from pillar
-    }
-}
-
-// For quicksand, only check collision with the main pit area
-const isQuicksand = obstacles.includes(object) && object.children.some(child => 
-    child.geometry && child.geometry.type === 'CircleGeometry' && child.position.y < 0
-);
-
-if (isQuicksand) {
-    // Find the main quicksand pit (the CircleGeometry at y = -0.1)
-    const mainPit = object.children.find(child => 
-        child.geometry && child.geometry.type === 'CircleGeometry' && child.position.y < 0
-    );
-    
-    if (mainPit) {
-        // Get world positions to check distance first
-        const playerPos = new THREE.Vector3();
-        const pitPos = new THREE.Vector3();
-        player.getWorldPosition(playerPos);
-        mainPit.getWorldPosition(pitPos);
-        
-        const distance = playerPos.distanceTo(pitPos);
-        debug('🏜️ Quicksand distance check:', distance, 'Player at:', playerPos.x, 'Pit at:', pitPos.x);
-        
-        // Only check collision if player is close to the pit center
-        if (distance < 1.0) {
-            // Can jump over quicksand if high enough
-            if (jumping && player.position.y > 0.8) {
-                debug('🦘 Jumped over quicksand!');
-                return false;
-            }
-            debug('💥 Hit quicksand pit!');
-            return true;
-        }
-        return false; // No collision if too far from pit center
-    }
-}
-    
-    // For Monster character, use precise collision with main body only
-if (currentCharacter === 'monster') {
-    // Find the main body (central sphere) of the Monster
-    let monsterBody = null;
-    for (let i = 0; i < player.children.length; i++) {
-        const child = player.children[i];
-        if (child.userData && child.userData.isMainBody) {
-            monsterBody = child;
-            break;
-        }
-    }
-    
-    if (monsterBody) {
-        // Use cached collision boundaries
-        const bodyBox = getCachedCollisionBox(monsterBody);
-        const objectBox = getCachedCollisionBox(object);
-        
-        // Check intersection between cached boxes
-        return bodyBox.intersectsBox(objectBox);
-    }
-}
-
-// For Dragon character, use cached collision with body only (ignore wings)
-if (currentCharacter === 'dragon') {
-    // Use simple distance check for performance, but verify with wings
-    if (checkSimpleCollision(object, player, 2.0)) {
-        // Double-check with cached bounding box if close
-        const objectBox = getCachedCollisionBox(object);
-        const playerBox = getCachedCollisionBox(player);
-        return playerBox.intersectsBox(objectBox);
-    }
-    return false;
-}
-    
-    // For UFO character, handle collision differently for coins vs obstacles
-if (currentCharacter === 'ufo') {
-    // Check if this is a coin (coins are in the coins array)
-    const isCoin = coins.includes(object);
-    
-    if (isCoin) {
-        // For coins, use expanded collision area
-        const playerBox = new THREE.Box3().setFromObject(player);
-        const objectBox = new THREE.Box3().setFromObject(object);
-        
-        // Expand the UFO's collision box vertically to catch coins above and below
-        playerBox.min.y -= 0.3; // Extend downward
-        playerBox.max.y += 0.5; // Extend upward more to catch coins
-        
-        return playerBox.intersectsBox(objectBox);
-    } else {
-        // For obstacles, create a custom bounding box excluding the tractor beam
-        const customBox = new THREE.Box3();
-        
-        // Only include specific UFO parts (exclude the beam which is usually the last child)
-        for (let i = 0; i < player.children.length; i++) {
-            const child = player.children[i];
-            // Skip the tractor beam (it's positioned at y = -0.6)
-            if (child.position.y > -0.4) {
-                const childBox = new THREE.Box3().setFromObject(child);
-                if (customBox.isEmpty()) {
-                    customBox.copy(childBox);
-                } else {
-                    customBox.union(childBox);
-                }
-            }
-        }
-        
-        const objectBox = new THREE.Box3().setFromObject(object);
-        return customBox.intersectsBox(objectBox);
-    }
-}
-
-// For meteors, use precise lane-based collision detection
-if (meteors.includes(object)) {
-    // Check if meteor and player are in the same lane
-    const meteorLane = object.userData ? object.userData.targetLane : -1;
-    const playerLane = currentLane;
-    
-    // Only collide if they're in the same lane AND close enough vertically
-    if (meteorLane === playerLane) {
-        const playerBox = new THREE.Box3().setFromObject(player);
-        const meteorBox = new THREE.Box3().setFromObject(object);
-        
-        // Make collision more precise - only check if meteor is at ground level
-        if (object.position.y <= 1.0) { // Meteor is close to ground
-            return playerBox.intersectsBox(meteorBox);
-        }
-    }
-    
-    return false; // No collision if not in same lane or meteor is too high
-}
-
-// Check if this is a fallen tree - only collide with the trunk
-const isFallenTree = obstacles.includes(object) && object.children.some(child => child.userData && child.userData.isMainTrunk);
-
-if (isFallenTree) {
-    // Find the trunk specifically
-    const trunk = object.children.find(child => child.userData && child.userData.isMainTrunk);
-    if (trunk) {
-        // Get world positions
-        const playerPos = new THREE.Vector3();
-        const trunkPos = new THREE.Vector3();
-        player.getWorldPosition(playerPos);
-        trunk.getWorldPosition(trunkPos);
-        
-        // Only check collision if player is close to the trunk's actual position
-        const distance = playerPos.distanceTo(trunkPos);
-        debug('🌳 Fallen tree distance check:', distance, 'Player at:', playerPos.x, 'Trunk at:', trunkPos.x);
-        
-        // Much stricter collision - only collide if very close to trunk center
-        if (distance < 1.0) {
-            // Can jump over fallen trees
-            if (jumping && player.position.y > 1.0) {
-                debug('🦘 Jumped over fallen tree!');
-                return false;
-            }
-            debug('💥 Hit fallen tree trunk!');
-            return true;
-        }
-        return false; // No collision if too far from trunk
-    }
-}
-
-
-
-// For Robot character, use collision detection ONLY for main body parts (exclude particles)
-if (currentCharacter === 'robot') {
-    // Create collision box only from robot's main body parts (exclude electromagnetic particles)
-    const robotMainBox = new THREE.Box3();
-    
-    // Only include the first 7 children (body, head, eyes, arms, legs, antenna)
-    // Skip the electromagnetic field particles (children 8+)
-    for (let i = 0; i < Math.min(7, player.children.length); i++) {
-        const child = player.children[i];
-        const childBox = new THREE.Box3().setFromObject(child);
-        if (robotMainBox.isEmpty()) {
-            robotMainBox.copy(childBox);
-        } else {
-            robotMainBox.union(childBox);
-        }
-    }
-    
-    const objectBox = new THREE.Box3().setFromObject(object);
-    
-    // Check if this is an obstacle and player is jumping
-    const isObstacle = obstacles.includes(object);
-    if (isObstacle && jumping && player.position.y > 1.2) {
-        debug('🦘 Robot jumped over obstacle at height:', player.position.y);
-        return false; // No collision with obstacles when jumping high enough
-    }
-    
-    // Robot shield - blocks obstacles (but not coins/power-ups)  
-    if (robotShieldActive) {
-        const isObstacle = obstacles.includes(object);
-        const isStream = waterStreams.includes(object);
-        const isMeteor = meteors.includes(object);
-        
-        if (isObstacle || isStream || isMeteor) {
-            // Create shield spark effect when blocking
-            createShieldSparkEffect(object.position);
-            debug('🤖 Robot shield blocked obstacle!');
-            return false; // No collision when shield is active
-        }
-    }
-    
-    return robotMainBox.intersectsBox(objectBox);
-}
-
-// For Creature character, use collision detection ONLY for main body (exclude wisps and orbs)
-if (currentCharacter === 'creature') {
-    // Create collision box only from creature's main body parts (exclude wisps, tentacles, etc.)
-    const creatureMainBox = new THREE.Box3();
-    
-    // Only include the first 2 children (main body and neon core)
-    // Skip the eyes, tentacles, wisps, and dark aura (children 2+)
-    for (let i = 0; i < Math.min(2, player.children.length); i++) {
-        const child = player.children[i];
-        const childBox = new THREE.Box3().setFromObject(child);
-        if (creatureMainBox.isEmpty()) {
-            creatureMainBox.copy(childBox);
-        } else {
-            creatureMainBox.union(childBox);
-        }
-    }
-    
-    const objectBox = new THREE.Box3().setFromObject(object);
-    
-    // Check if this is an obstacle and player is jumping
-    const isObstacle = obstacles.includes(object);
-    if (isObstacle && jumping && player.position.y > 1.2) {
-        debug('🦘 Creature jumped over obstacle at height:', player.position.y);
-        return false; // No collision with obstacles when jumping high enough
-    }
-    
-    return creatureMainBox.intersectsBox(objectBox);
-}
-
-// For other characters, use cached collision boundaries
-const playerBox = getCachedCollisionBox(player);
-const objectBox = getCachedCollisionBox(object);
-
-// Check if this is an obstacle (not a coin or power-up) and player is jumping
-const isObstacle = obstacles.includes(object);
-if (isObstacle && jumping && player.position.y > 1.2) {
-    return false; // No collision with obstacles when jumping high enough
-}
-
-// Ghost phase ability - can phase through obstacles (but not coins/power-ups)
-if (currentCharacter === 'ghost' && ghostPhaseActive) {
-    const isObstacle = obstacles.includes(object);
-    const isStream = waterStreams.includes(object);
-    
-    if (isObstacle || isStream) {
-        return false; // No collision when phasing
-    }
-}
-
-// Robot shield - blocks obstacles (but not coins/power-ups)  
-if (currentCharacter === 'robot' && robotShieldActive) {
-    const isObstacle = obstacles.includes(object);
-    const isStream = waterStreams.includes(object);
-    const isMeteor = meteors.includes(object);
-    
-    if (isObstacle || isStream || isMeteor) {
-        // Create shield spark effect when blocking
-        createShieldSparkEffect(object.position);
-        return false; // No collision when shield is active
-    }
-}
-
-// Use cached collision boundaries for final check
-return playerBox.intersectsBox(objectBox);
-}
         
         // Create explosion effect when game over
         function createExplosion() {
