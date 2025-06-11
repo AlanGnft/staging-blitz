@@ -116,8 +116,16 @@ if (!obstacle) {
     continue;
 }
 
-// Add metadata for collision detection
-obstacle.userData.obstacleType = 'generic';
+// Add metadata for collision detection based on mesh name
+if (randomMesh.includes('fallenTree')) {
+    obstacle.userData.obstacleType = 'fallenTree';
+} else if (randomMesh.includes('ancientRuin')) {
+    obstacle.userData.obstacleType = 'ancientRuin';
+} else if (randomMesh.includes('quicksand')) {
+    obstacle.userData.obstacleType = 'quicksand';
+} else {
+    obstacle.userData.obstacleType = 'generic';
+}
         
         obstacle.position.x = lanes[laneIndex];
         obstacle.position.z = -50; // Spawn far away
