@@ -1593,39 +1593,60 @@ gltf.scene.children.forEach(child => {
 });
 console.log('=== END STRUCTURE ===');
                 
-                // Store each obstacle type in the cache
-                    gltf.scene.traverse((child) => {
-                        // Debug what we're getting
-                        console.log('Found in GLB:', child.type, child.name, 'parent:', child.parent?.name);
-                        
-                        // Skip if this is a leaf or decorative element
-                        const isDecorative = child.name && (
-                            child.name.includes('leaf') || 
-                            child.name.includes('Leaf') ||
-                            child.name.includes('moss') ||
-                            child.name.includes('berry') ||
-                            child.name.includes('twig') ||
-                            child.name.includes('mesh_') && child.parent && child.parent.name !== 'Scene'
-                        );
-                        
-                        if (isDecorative) {
-                            console.log('Skipping decorative element:', child.name);
-                            return;
-                        }
-                        
-                        // Only cache main obstacle groups or standalone meshes that are direct children of the scene
-                        if (child.isMesh && child.parent && child.parent.name === 'Scene') {
-                            // This is a standalone mesh at the root level
-                            obstacleModels.set(child.name, child);
-                            console.log(`📦 Cached obstacle: ${child.name}`);
-                            console.log('GLB Structure:', gltf.scene);
-                        } else if (child.isGroup && child.children.length > 0 && child.name !== 'Scene') {
-                            // This is a group containing multiple meshes (like fallen tree with leaves)
-                            obstacleModels.set(child.name, child);
-                            console.log(`📦 Cached obstacle group: ${child.name} with ${child.children.length} children`);
-                            console.log('GLB Structure:', gltf.scene);
-                        }
-                    });
+                // First, let's see the exact structure
+console.log('=== DETAILED GLB STRUCTURE ===');
+console.log(`World: ${worldName}`);
+console.log('Scene children:', gltf.scene.children);
+
+// Clear any previous obstacles
+obstacleModels.clear();
+
+// For the exporter structure, obstacles might be organized differently
+// Let's look for the main obstacle container
+const obstacleContainer = gltf.scene.children.find(child => 
+    child.name.includes('_obstacles') || child.name === 'Scene' || child.isGroup
+);
+
+if (obstacleContainer && obstacleContainer.children.length > 0) {
+    console.log(`Found obstacle container: ${obstacleContainer.name} with ${obstacleContainer.children.length} children`);
+    
+    // Each child of the container should be a complete obstacle
+    obstacleContainer.children.forEach(obstacle => {
+        if (obstacle.name && !obstacle.name.includes('_mesh')) {
+            // This is a main obstacle group
+            obstacleModels.set(obstacle.name, obstacle);
+            console.log(`📦 Cached complete obstacle: ${obstacle.name}`);
+        }
+    });
+} else {
+    // Fallback: look for obstacles at scene level
+    gltf.scene.children.forEach(child => {
+        // Only cache groups that represent complete obstacles
+        if (child.isGroup && child.name && 
+            (child.name === 'rock' || 
+             child.name === 'treeStump' || 
+             child.name === 'log' || 
+             child.name === 'bush' || 
+             child.name === 'spikes' || 
+             child.name === 'fallenTree' ||
+             child.name === 'treeRoot' ||
+             child.name === 'thornBush' ||
+             child.name === 'fallenBranch' ||
+             child.name === 'mushroomRing' ||
+             child.name === 'puddlePatch' ||
+             child.name === 'cactus' ||
+             child.name === 'sandDune' ||
+             child.name === 'quicksand' ||
+             child.name === 'ancientRuin')) {
+            obstacleModels.set(child.name, child);
+            console.log(`📦 Cached obstacle: ${child.name}`);
+        }
+    });
+}
+
+console.log(`Total obstacles cached for ${worldName}:`, obstacleModels.size);
+console.log('Cached obstacles:', Array.from(obstacleModels.keys()));
+console.log('=== END DETAILED STRUCTURE ===');
                 
                 currentWorldObstaclesLoaded = true;
                 resolve();
