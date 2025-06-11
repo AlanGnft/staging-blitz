@@ -116,15 +116,15 @@ if (!obstacle) {
     continue;
 }
 
-// Add metadata for collision detection based on mesh name
-if (randomMesh.includes('fallenTree')) {
+// Add metadata for collision detection based on obstacle name
+if (randomMesh === 'fallenTree') {
     obstacle.userData.obstacleType = 'fallenTree';
-} else if (randomMesh.includes('ancientRuin')) {
+} else if (randomMesh === 'ancientRuin') {
     obstacle.userData.obstacleType = 'ancientRuin';
-} else if (randomMesh.includes('quicksand')) {
+} else if (randomMesh === 'quicksand') {
     obstacle.userData.obstacleType = 'quicksand';
 } else {
-    obstacle.userData.obstacleType = 'generic';
+    obstacle.userData.obstacleType = randomMesh; // Use the actual obstacle name
 }
         
         obstacle.position.x = lanes[laneIndex];
