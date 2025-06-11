@@ -76,21 +76,26 @@ function spawnObstacle() {
         let obstacle;
         
         // 5% chance of spawning fallen tree (spans 2 lanes) - check this BEFORE determining obstacle count
-        if (Math.random() < 0.05) {
-            // Spawn fallen tree across 2 adjacent lanes
-            const startLane = Math.floor(Math.random() * 2); // 0 or 1 (so we can span to 1 or 2)
-            
-            const fallenTree = createFallenTree();
-            fallenTree.position.x = lanes[startLane] + 1; // Position between the two lanes
-            fallenTree.position.z = -50;
-            scene.add(fallenTree);
-            obstacles.push(fallenTree);
-            
-            debug('🌳 Fallen tree spawned at position:', fallenTree.position);
-            
-            // Skip the normal obstacle spawning since we spawned a fallen tree
-            return;
-        }
+if (Math.random() < 0.05) {
+    // ONLY spawn fallen tree in classic and forest worlds
+    if (currentWorld === 'classic' || currentWorld === 'forest') {
+        // Spawn fallen tree across 2 adjacent lanes
+        const startLane = Math.floor(Math.random() * 2); // 0 or 1 (so we can span to 1 or 2)
+        
+        const fallenTree = createFallenTree();
+        fallenTree.position.x = lanes[startLane] + 1; // Position between the two lanes
+        fallenTree.position.z = -50;
+        fallenTree.userData.obstacleType = 'fallenTree'; // Make sure to set the type
+        scene.add(fallenTree);
+        obstacles.push(fallenTree);
+        
+        debug('🌳 Fallen tree spawned at position:', fallenTree.position);
+        
+        // Skip the normal obstacle spawning since we spawned a fallen tree
+        return;
+    }
+    // If we're in desert world, don't spawn fallen tree, continue to normal obstacles
+}
 
         // Check if obstacles are loaded
 if (!currentWorldObstaclesLoaded) {
