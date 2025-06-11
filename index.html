@@ -4206,9 +4206,26 @@ function applyWorldSettings(world) {
     // Store current world data for other systems to use
     window.currentWorldData = world;
     
-    // Clear existing obstacles from scene
-    obstacles.forEach(obstacle => scene.remove(obstacle));
-    obstacles = [];
+    // Clear existing obstacles from scene AND from the obstacles array
+        obstacles.forEach(obstacle => {
+            scene.remove(obstacle);
+            // Also remove any references to avoid memory leaks
+            if (obstacle.geometry) obstacle.geometry.dispose();
+            if (obstacle.material) {
+                if (Array.isArray(obstacle.material)) {
+                    obstacle.material.forEach(mat => mat.dispose());
+                } else {
+                    obstacle.material.dispose();
+                }
+            }
+        });
+        obstacles.length = 0; // Clear the array completely
+
+        // Add a small delay before spawning new obstacles to ensure scene is updated
+        setTimeout(() => {
+            console.log('Obstacles array after clearing:', obstacles.length);
+            console.log('Available obstacles for spawning:', Array.from(obstacleModels.keys()));
+        }, 100);
     
     // Clear the obstacle models cache and reload for new world
     obstacleModels.clear();
