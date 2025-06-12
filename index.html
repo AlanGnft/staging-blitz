@@ -4469,6 +4469,17 @@ function applyWorldSettings(world) {
         });
         obstacles.length = 0; // Clear the array completely
 
+        // Remove birds and butterflies when switching any world
+    butterflyGroups.forEach(butterfly => {
+        scene.remove(butterfly);
+    });
+    butterflyGroups = [];
+
+    birds.forEach(bird => {
+        scene.remove(bird);
+    });
+    birds = [];
+
         // Add a small delay before spawning new obstacles to ensure scene is updated
         setTimeout(() => {
             console.log('Obstacles array after clearing:', obstacles.length);
@@ -5334,33 +5345,39 @@ function createRainSystem() {
             
             // Spawn new butterflies/beetles occasionally - world-specific
 if (Math.random() < 0.005 && butterflyGroups.length < mobileButterflyLimit && currentWeather === "clear") {
-    const x = Math.random() * 40 - 20;
-    const y = Math.random() * 3 + 1;
-    const z = Math.random() * 20 - 40;
-    
-    if (currentWorld === 'desert') {
-        // Desert beetles instead of butterflies
-        butterflyGroups.push(createDesertBeetle(x, y, z));
-    } else {
-        // Regular butterflies for classic and forest
-        butterflyGroups.push(createButterfly(x, y, z));
+    // Don't spawn in underwater world!
+    if (currentWorld !== 'underwater') {
+        const x = Math.random() * 40 - 20;
+        const y = Math.random() * 3 + 1;
+        const z = Math.random() * 20 - 40;
+        
+        if (currentWorld === 'desert') {
+            // Desert beetles instead of butterflies
+            butterflyGroups.push(createDesertBeetle(x, y, z));
+        } else {
+            // Regular butterflies for classic and forest
+            butterflyGroups.push(createButterfly(x, y, z));
+        }
     }
 }
             
             // Spawn new birds occasionally - world-specific types
 if (Math.random() < 0.002 && birds.length < mobileBirdsLimit) {
-    const x = Math.random() * 60 - 30;
-    const y = Math.random() * 10 + 10;
-    const z = -100;
-    
-    // Different birds for different worlds
-    if (currentWorld === 'desert') {
-        // Vultures and desert birds fly higher
-        const desertY = Math.random() * 15 + 15;
-        birds.push(createBird(x, desertY, z));
-    } else {
-        // Regular birds for classic and forest
-        birds.push(createBird(x, y, z));
+    // Don't spawn in underwater or forest worlds!
+    if (currentWorld !== 'underwater' && currentWorld !== 'forest') {
+        const x = Math.random() * 60 - 30;
+        const y = Math.random() * 10 + 10;
+        const z = -100;
+        
+        // Different birds for different worlds
+        if (currentWorld === 'desert') {
+            // Vultures and desert birds fly higher
+            const desertY = Math.random() * 15 + 15;
+            birds.push(createBird(x, desertY, z));
+        } else {
+            // Regular birds for classic only
+            birds.push(createBird(x, y, z));
+        }
     }
 }
 }
@@ -6603,20 +6620,24 @@ if (currentWorld === 'desert') {
                 scene.add(hill);
             }
             
-            // Add some butterflies
-            for (let i = 0; i < 5; i++) {
-                const x = Math.random() * 40 - 20;
-                const y = Math.random() * 3 + 1;
-                const z = Math.random() * 20 - 40;
-                butterflyGroups.push(createButterfly(x, y, z));
+            // Add some butterflies - ONLY for appropriate worlds
+            if (currentWorld === 'classic' || currentWorld === 'forest') {
+                for (let i = 0; i < 5; i++) {
+                    const x = Math.random() * 40 - 20;
+                    const y = Math.random() * 3 + 1;
+                    const z = Math.random() * 20 - 40;
+                    butterflyGroups.push(createButterfly(x, y, z));
+                }
             }
             
-            // Add some birds
-            for (let i = 0; i < 3; i++) {
-                const x = Math.random() * 60 - 30;
-                const y = Math.random() * 10 + 10;
-                const z = Math.random() * 40 - 80;
-                birds.push(createBird(x, y, z));
+            // Add some birds - ONLY for appropriate worlds  
+            if (currentWorld === 'classic') {
+                for (let i = 0; i < 3; i++) {
+                    const x = Math.random() * 60 - 30;
+                    const y = Math.random() * 10 + 10;
+                    const z = Math.random() * 40 - 80;
+                    birds.push(createBird(x, y, z));
+                }
             }
         }
         
