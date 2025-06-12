@@ -4438,6 +4438,18 @@ function applyWorldSettings(world) {
     } else {
         removeUnderwaterEffects();
     }
+    // In applyWorldSettings function, after the underwater effects code:
+        if (world.id === 'underwater') {
+            createUnderwaterEffects();
+            
+            // Remove any existing water streams when switching to underwater
+            waterStreams.forEach(stream => {
+                scene.remove(stream);
+            });
+            waterStreams = [];
+        } else {
+            removeUnderwaterEffects();
+        }
 
     // Store current world data for other systems to use
     window.currentWorldData = world;
@@ -5866,6 +5878,64 @@ currentWorld = 'classic';
             waterTexture.wrapT = THREE.RepeatWrapping;
             waterTexture.repeat.set(5, 1);
         }
+
+        function createOceanFloorTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    // Dark ocean floor base
+    ctx.fillStyle = '#1a3a4a';
+    ctx.fillRect(0, 0, 512, 512);
+    
+    // Add sand/sediment texture
+    for (let i = 0; i < 2000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const brightness = Math.random() * 20 + 30;
+        const size = Math.random() * 2 + 1;
+        ctx.fillStyle = `rgb(${brightness}, ${brightness + 10}, ${brightness + 20})`;
+        ctx.fillRect(x, y, size, size);
+    }
+    
+    // Add darker patches
+    for (let i = 0; i < 20; i++) {
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const radius = Math.random() * 40 + 20;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+        ctx.restore();
+    }
+    
+    // Add some lighter sandy patches
+    for (let i = 0; i < 15; i++) {
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const radius = Math.random() * 30 + 15;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, '#3a5a6a');
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+        ctx.restore();
+    }
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 10);
+    
+    return texture;
+}
         
         // Create ground with grass texture
 function createGround() {
@@ -5883,6 +5953,14 @@ function createGround() {
         groundMaterial = new THREE.MeshStandardMaterial({
             color: 0xF4A460, // Sandy brown
             roughness: 0.8
+        });
+    } else if (currentWorld === 'underwater') {  // ADD THIS
+        groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a3a4a, // Dark ocean floor blue-grey
+            roughness: 1,
+            metalness: 0,
+            // Add some variation to make it look more natural
+            map: createOceanFloorTexture ? createOceanFloorTexture() : null
         });
     } else {
         // Classic world - use grass texture
@@ -5906,23 +5984,29 @@ function createGround() {
         // Add dirt sides to each ground segment
         const dirtGeometry = new THREE.BoxGeometry(12, 1, 50.1);
         // Create dirt material based on world
-        let dirtMaterial;
-        if (currentWorld === 'forest') {
-            dirtMaterial = new THREE.MeshStandardMaterial({
-                color: 0x654321, // Dark brown forest soil
-                roughness: 1
-            });
-        } else if (currentWorld === 'desert') {
-            dirtMaterial = new THREE.MeshStandardMaterial({
-                color: 0xCD853F, // Sandy rock color
-                roughness: 0.9
-            });
-        } else {
-            dirtMaterial = new THREE.MeshStandardMaterial({
-                color: 0x8B4513, // Classic brown dirt
-                roughness: 1
-            });
-        }
+let dirtMaterial;
+if (currentWorld === 'forest') {
+    dirtMaterial = new THREE.MeshStandardMaterial({
+        color: 0x654321, // Dark brown forest soil
+        roughness: 1
+    });
+} else if (currentWorld === 'desert') {
+    dirtMaterial = new THREE.MeshStandardMaterial({
+        color: 0xCD853F, // Sandy rock color
+        roughness: 0.9
+    });
+} else if (currentWorld === 'underwater') {  // ADD THIS
+    dirtMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0d1f2d, // Very dark ocean depths
+        roughness: 1,
+        metalness: 0
+    });
+} else {
+    dirtMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B4513, // Classic brown dirt
+        roughness: 1
+    });
+}
 
         const dirtSide = new THREE.Mesh(dirtGeometry, dirtMaterial);
         dirtSide.position.y = -0.75;
@@ -5930,27 +6014,35 @@ function createGround() {
         scene.add(dirtSide);
 
         // Create side terrain material based on world
-        let sideTerrainMaterial;
-        if (currentWorld === 'forest') {
-            sideTerrainMaterial = new THREE.MeshStandardMaterial({
-                color: 0x1F4F2F, // Very dark forest green
-                roughness: 1.0
-            });
-        } else if (currentWorld === 'desert') {
-            sideTerrainMaterial = new THREE.MeshStandardMaterial({
-                color: 0xDEB887, // Desert sand color
-                roughness: 0.9
-            });
-        } else {
-            // Classic world - use grass texture
-            const wildGrassTexture = grassTexture.clone();
-            wildGrassTexture.repeat.set(5, 30);
-            sideTerrainMaterial = new THREE.MeshStandardMaterial({
-                map: wildGrassTexture,
-                roughness: 0.9,
-                color: 0x88AA88
-            });
-        }
+let sideTerrainMaterial;
+if (currentWorld === 'forest') {
+    sideTerrainMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1F4F2F, // Very dark forest green
+        roughness: 1.0
+    });
+} else if (currentWorld === 'desert') {
+    sideTerrainMaterial = new THREE.MeshStandardMaterial({
+        color: 0xDEB887, // Desert sand color
+        roughness: 0.9
+    });
+} else if (currentWorld === 'underwater') {  // ADD THIS
+    sideTerrainMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0f2a3f, // Deep ocean blue
+        roughness: 1,
+        metalness: 0.1,
+        emissive: 0x001122,
+        emissiveIntensity: 0.1
+    });
+} else {
+    // Classic world - use grass texture
+    const wildGrassTexture = grassTexture.clone();
+    wildGrassTexture.repeat.set(5, 30);
+    sideTerrainMaterial = new THREE.MeshStandardMaterial({
+        map: wildGrassTexture,
+        roughness: 0.9,
+        color: 0x88AA88
+    });
+}
 
         // Left side terrain
         const leftTerrainGeometry = new THREE.BoxGeometry(50, 0.3, 100);
@@ -6188,7 +6280,7 @@ if (currentWorld === 'desert') {
     // No mountains underwater! Maybe add distant coral formations or underwater cliffs
     // For now, just skip the mountain creation
     return;
-    
+
 } else if (currentWorld === 'forest') {
     // Create forest mountains
     for (let i = 0; i < 20; i++) {
@@ -10598,36 +10690,92 @@ if (meteor.position.y < -1 || meteor.position.z > player.position.z + 15) {
 function createUnderwaterEffects() {
     if (currentWorld !== 'underwater') return;
     
-    // Add blue fog for underwater depth
-    scene.fog = new THREE.Fog(0x003366, 10, 50);
+    // Create deep water gradient background instead of sky
+    if (renderer) {
+        // Create a deep ocean gradient
+        const canvas = document.createElement('canvas');
+        canvas.width = 2;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        
+        // Gradient from lighter blue at top to darker at bottom
+        const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+        gradient.addColorStop(0, '#1a4d6b');    // Lighter blue (toward surface)
+        gradient.addColorStop(0.5, '#0f3347');  // Medium blue
+        gradient.addColorStop(1, '#051828');    // Very dark blue (deep ocean)
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 2, 256);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        scene.background = texture;
+    }
+    
+    // Add thick underwater fog
+    scene.fog = new THREE.Fog(0x0a2540, 5, 40);  // Darker, denser fog
     
     // Adjust lighting for underwater ambiance
     if (ambientLight) {
-        ambientLight.color.setHex(0x224466);
-        ambientLight.intensity = 0.5;
+        ambientLight.color.setHex(0x1a4d6b);
+        ambientLight.intensity = 0.4;
     }
     
     if (skyLight) {
-        skyLight.color.setHex(0x88BBDD);
-        skyLight.intensity = 0.4;
-        skyLight.position.set(0, 10, 0); // Light from above (surface)
+        skyLight.color.setHex(0x4a90e2);
+        skyLight.intensity = 0.3;
+        skyLight.position.set(0, 20, 0); // Light from above (surface)
     }
     
-    // Add caustic light effect (optional - for extra realism)
+    // Add caustic light effect
     if (!window.causticLight) {
-        window.causticLight = new THREE.DirectionalLight(0x88CCFF, 0.2);
+        window.causticLight = new THREE.DirectionalLight(0x5599DD, 0.2);
         window.causticLight.position.set(5, 10, 5);
         scene.add(window.causticLight);
+    }
+    
+    // Add water particles floating around
+    createWaterParticles();
+}
+
+function createWaterParticles() {
+    if (!window.waterParticles) {
+        const particleCount = 200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 50;
+            positions[i + 1] = Math.random() * 10;
+            positions[i + 2] = (Math.random() - 0.5) * 50;
+        }
+        
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        const material = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.6
+        });
+        
+        window.waterParticles = new THREE.Points(geometry, material);
+        scene.add(window.waterParticles);
     }
 }
 
 // Remove underwater effects when leaving
 function removeUnderwaterEffects() {
     scene.fog = null;
+    scene.background = null; // Reset to default background
     
     if (window.causticLight) {
         scene.remove(window.causticLight);
         window.causticLight = null;
+    }
+    
+    if (window.waterParticles) {
+        scene.remove(window.waterParticles);
+        window.waterParticles = null;
     }
 }
 
