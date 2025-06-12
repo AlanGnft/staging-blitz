@@ -5954,15 +5954,13 @@ function createGround() {
             color: 0xF4A460, // Sandy brown
             roughness: 0.8
         });
-    } else if (currentWorld === 'underwater') {  // ADD THIS
-        groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1a3a4a, // Dark ocean floor blue-grey
-            roughness: 1,
-            metalness: 0,
-            // Add some variation to make it look more natural
-            map: createOceanFloorTexture ? createOceanFloorTexture() : null
-        });
-    } else {
+    } else if (currentWorld === 'underwater') {
+    groundMaterial = new THREE.MeshStandardMaterial({
+        color: 0x2a5a7a,  // Brighter ocean floor (was 0x1a3a4a)
+        roughness: 1,
+        metalness: 0
+    });
+} else {
         // Classic world - use grass texture
         groundMaterial = new THREE.MeshStandardMaterial({
             map: grassTexture,
@@ -6025,13 +6023,11 @@ if (currentWorld === 'forest') {
         color: 0xDEB887, // Desert sand color
         roughness: 0.9
     });
-} else if (currentWorld === 'underwater') {  // ADD THIS
+} else if (currentWorld === 'underwater') {
     sideTerrainMaterial = new THREE.MeshStandardMaterial({
-        color: 0x0f2a3f, // Deep ocean blue
+        color: 0x225570,  // Brighter (was 0x0f2a3f)
         roughness: 1,
-        metalness: 0.1,
-        emissive: 0x001122,
-        emissiveIntensity: 0.1
+        metalness: 0
     });
 } else {
     // Classic world - use grass texture
@@ -6278,78 +6274,69 @@ if (currentWorld === 'desert') {
     }
  } else if (currentWorld === 'underwater') {
     // Create distant coral reef formations
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {  // Reduced from 12
         const coralGroup = new THREE.Group();
         
-        // Base rock formation
-        const rockGeometry = new THREE.DodecahedronGeometry(
-            Math.random() * 20 + 15, // Bigger: 15-35 radius
-            1
+        // Create brain coral shape (more interesting than rocks)
+        const coralGeometry = new THREE.SphereGeometry(
+            Math.random() * 20 + 15,
+            8,  // Reduced segments for performance
+            6
         );
-        const rockMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2a4a5a, // Dark blue-grey
-            roughness: 1
+        // Deform the sphere to look more like brain coral
+        const coralMaterial = new THREE.MeshStandardMaterial({
+            color: Math.random() > 0.5 ? 0xFF6B9D : 0xFF8FAB,  // Pink coral colors
+            roughness: 0.8,
+            flatShading: true  // Gives it a more coral-like appearance
         });
-        const rock = new THREE.Mesh(rockGeometry, rockMaterial);
-        rock.scale.y = Math.random() * 0.5 + 0.5; // Flatten it
-        coralGroup.add(rock);
+        const coral = new THREE.Mesh(coralGeometry, coralMaterial);
+        coral.scale.set(1, 0.6, 1);  // Flatten it
         
-        // Add some coral details
-        const coralColors = [0x3a5a6a, 0x4a6a7a, 0x2a4a5a];
-        for (let j = 0; j < 3; j++) {
-            const coralGeometry = new THREE.SphereGeometry(
-                Math.random() * 5 + 3,
-                8,
-                6
-            );
-            const coralMaterial = new THREE.MeshStandardMaterial({
-                color: coralColors[Math.floor(Math.random() * coralColors.length)],
-                roughness: 0.8
+        // Add staghorn coral branches
+        for (let j = 0; j < 4; j++) {  // Reduced from more branches
+            const branchGeometry = new THREE.ConeGeometry(3, 15, 6);  // Simple cone
+            const branchMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFA07A,  // Light coral color
+                roughness: 0.9
             });
-            const coral = new THREE.Mesh(coralGeometry, coralMaterial);
-            coral.position.set(
-                (Math.random() - 0.5) * 15,
-                Math.random() * 8,
-                (Math.random() - 0.5) * 15
+            const branch = new THREE.Mesh(branchGeometry, branchMaterial);
+            const angle = (j / 4) * Math.PI * 2;
+            branch.position.set(
+                Math.cos(angle) * 10,
+                7,
+                Math.sin(angle) * 10
             );
-            coral.scale.y = 0.6;
-            coralGroup.add(coral);
+            branch.rotation.z = angle * 0.3;
+            coralGroup.add(branch);
         }
         
-        // Position FAR in the background like other worlds
-        const distance = Math.random() * 300 + 150; // 150-450 units away (matching other worlds)
-        const posX = Math.random() * 300 - 150; // Spread across view
-        coralGroup.position.set(
-            posX, 
-            Math.random() * 10 - 5, // Some above, some below horizon
-            -distance
-        );
+        coralGroup.add(coral);
         
-        // Random rotation for variety
-        coralGroup.rotation.y = Math.random() * Math.PI * 2;
+        // Position FAR in the background
+        const distance = Math.random() * 300 + 150;
+        const posX = Math.random() * 300 - 150;
+        coralGroup.position.set(posX, -5, -distance);
         
         scene.add(coralGroup);
     }
     
-    // Add some tall kelp forests in far distance
-    for (let i = 0; i < 8; i++) {
-        const kelpGeometry = new THREE.CylinderGeometry(
-            3, 5, 40, 8  // Bigger and simpler
-        );
+    // Simpler kelp forests - just cylinders
+    for (let i = 0; i < 5; i++) {  // Reduced from 8
+        const kelpGeometry = new THREE.CylinderGeometry(3, 5, 40, 6);  // Reduced segments
         const kelpMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1a3a2a, // Dark green
+            color: 0x2F4F2F,
             roughness: 0.9
         });
         const kelp = new THREE.Mesh(kelpGeometry, kelpMaterial);
         
-        const distance = Math.random() * 200 + 200; // 200-400 units away
+        const distance = Math.random() * 200 + 200;
         const posX = Math.random() * 400 - 200;
         kelp.position.set(posX, 0, -distance);
         
         scene.add(kelp);
     }
     
-    return; // Skip the normal mountain creation
+    return;
 } else if (currentWorld === 'forest') {
     // Create forest mountains
     for (let i = 0; i < 20; i++) {
