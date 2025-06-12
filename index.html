@@ -1702,6 +1702,113 @@ function getObstacleFromGLB(obstacleType) {
     return null;
 }
 
+// ==================== GLB SCENERY SYSTEM ====================
+// GLB-based scenery loading for better performance
+
+// Scenery model cache
+const sceneryModels = new Map();
+const worldSceneryPacks = {
+    classic: 'assets/scenery/scenery_classic_mobile.glb',
+    forest: 'assets/scenery/scenery_forest_mobile.glb',
+    desert: 'assets/scenery/scenery_desert_mobile.glb'
+};
+
+// Track if scenery is loaded for current world
+let currentWorldSceneryLoaded = false;
+
+// Load scenery for a specific world
+async function loadWorldScenery(worldName) {
+    const packPath = worldSceneryPacks[worldName] || worldSceneryPacks.classic;
+    
+    console.log(`🌳 Loading ${worldName} scenery...`);
+    
+    return new Promise((resolve, reject) => {
+        gltfLoader.load(
+            packPath,
+            (gltf) => {
+                console.log(`✅ Loaded ${worldName} scenery pack`);
+                
+                // Clear any previous scenery
+                sceneryModels.clear();
+                
+                // Debug the structure
+                console.log('=== SCENERY GLB STRUCTURE ===');
+                console.log(`World: ${worldName}`);
+                console.log('Scene children:', gltf.scene.children);
+                
+                // Look for scenery container
+                const sceneryContainer = gltf.scene.children.find(child => 
+                    child.name.includes('_scenery') || child.name === 'Scene' || child.isGroup
+                );
+                
+                if (sceneryContainer && sceneryContainer.children.length > 0) {
+                    console.log(`Found scenery container: ${sceneryContainer.name} with ${sceneryContainer.children.length} children`);
+                    
+                    // Cache each scenery item
+                    sceneryContainer.children.forEach(sceneryItem => {
+                        if (sceneryItem.name && !sceneryItem.name.includes('_mesh')) {
+                            sceneryModels.set(sceneryItem.name, sceneryItem);
+                            console.log(`🌲 Cached scenery: ${sceneryItem.name}`);
+                        }
+                    });
+                } else {
+                    // Fallback: look at scene level
+                    gltf.scene.children.forEach(child => {
+                        if (child.isGroup && child.name) {
+                            sceneryModels.set(child.name, child);
+                            console.log(`🌲 Cached scenery: ${child.name}`);
+                        }
+                    });
+                }
+                
+                console.log(`Total scenery cached for ${worldName}:`, sceneryModels.size);
+                console.log('Cached scenery:', Array.from(sceneryModels.keys()));
+                console.log('=== END SCENERY STRUCTURE ===');
+                
+                currentWorldSceneryLoaded = true;
+                resolve();
+            },
+            (progress) => {
+                // Progress callback
+            },
+            (error) => {
+                console.error('Error loading scenery GLB:', error);
+                reject(error);
+            }
+        );
+    });
+}
+
+// Get scenery from GLB with proper cloning
+function getSceneryFromGLB(sceneryType) {
+    const model = sceneryModels.get(sceneryType);
+    if (!model) {
+        console.warn(`Scenery type "${sceneryType}" not found in GLB`);
+        return null;
+    }
+    
+    // Clone the model
+    const sceneryClone = model.clone();
+    
+    // Clone materials to avoid shared material issues
+    sceneryClone.traverse((child) => {
+        if (child.isMesh && child.material) {
+            if (Array.isArray(child.material)) {
+                child.material = child.material.map(mat => mat.clone());
+            } else {
+                child.material = child.material.clone();
+            }
+        }
+    });
+    
+    // Preserve any animation data from the original
+    if (model.userData) {
+        sceneryClone.userData = { ...model.userData };
+    }
+    
+    return sceneryClone;
+}
+
 
 
 // ==================== DEBUG SYSTEM ====================
@@ -2299,6 +2406,13 @@ loadWorldObstacles(currentWorld || 'classic').then(() => {
 }).catch(error => {
     console.error('Failed to load initial obstacles:', error);
     // Game can continue without obstacles in case of error
+});
+
+// Load initial scenery
+loadWorldScenery(currentWorld).then(() => {
+    console.log('✅ Initial scenery loaded');
+}).catch(error => {
+    console.error('Failed to load initial scenery:', error);
 });
             
             // Create scene
@@ -4237,6 +4351,21 @@ function applyWorldSettings(world) {
     }).catch(error => {
         console.error(`Failed to load ${world.id} obstacles:`, error);
     });
+
+    // Clear existing scenery from scene
+sceneryObjects.forEach(scenery => scene.remove(scenery));
+sceneryObjects = [];
+
+// Clear the scenery models cache and reload for new world
+sceneryModels.clear();
+currentWorldSceneryLoaded = false;
+
+// Load the new world's scenery
+loadWorldScenery(world.id).then(() => {
+    console.log(`✅ ${world.id} scenery loaded after world switch`);
+}).catch(error => {
+    console.error(`Failed to load ${world.id} scenery:`, error);
+});
     
     // IMPORTANT: Recreate the ground with the new world theme
     recreateGroundForWorld();
@@ -7897,75 +8026,60 @@ function showCharacterSelectScreenFromPause() {
 // Functions: spawnScenery(), createTallPine(), createMushroomPatch(), etc.
 
         // Create roadside scenery objects
-        function spawnScenery() {
-            // Spawn scenery to the sides of the lanes
-const side = Math.random() > 0.5 ? 1 : -1; // Left or right side
-const distance = Math.random() * 3 + 5; // Distance from center
-
-let sceneryObject;
-
-if (currentWorld === 'forest') {
-    // Forest-specific scenery
-    const forestScenery = Math.floor(Math.random() * 5);
-    switch (forestScenery) {
-        case 0: // Tall pine trees
-            sceneryObject = createTallPine();
-            break;
-        case 1: // Mushroom patches
-            sceneryObject = createMushroomPatch();
-            break;
-        case 2: // Fern clusters
-            sceneryObject = createFernCluster();
-            break;
-        case 3: // Firefly swarms
-            sceneryObject = createFireflySwarm();
-            break;
-        case 4: // Ancient oak
-            sceneryObject = createAncientOak();
-            break;
+function spawnScenery() {
+    // Check if scenery is loaded
+    if (!currentWorldSceneryLoaded) {
+        console.warn('Scenery not loaded yet');
+        return;
     }
-} else if (currentWorld === 'desert') {
-    // Desert-specific scenery
-    const desertScenery = Math.floor(Math.random() * 4);
-    switch (desertScenery) {
-        case 0: // Palm oasis
-            sceneryObject = createPalmOasis();
-            break;
-        case 1: // Shimmering mirage
-            sceneryObject = createMirage();
-            break;
-        case 2: // Rolling tumbleweed
-            sceneryObject = createTumbleweed();
-            break;
-        case 3: // Distant pyramid
-            sceneryObject = createPyramidDistance();
-            break;
+    
+    // Get available scenery for current world
+    const availableScenery = Array.from(sceneryModels.keys());
+    if (availableScenery.length === 0) {
+        console.error('No scenery loaded for current world!');
+        return;
     }
-} else {
-    // Classic world scenery
-    const sceneryType = Math.floor(Math.random() * 4);
-    switch (sceneryType) {
-        case 0: // Tree
-            sceneryObject = createTree();
-            break;
-        case 1: // Rock formation
-            sceneryObject = createRockFormation();
-            break;
-        case 2: // Flowers
-            sceneryObject = createFlowers();
-            break;
-        case 3: // Bush cluster
-            sceneryObject = createBushCluster();
-            break;
+    
+    // Spawn scenery to the sides of the lanes
+    const side = Math.random() > 0.5 ? 1 : -1; // Left or right side
+    const distance = Math.random() * 3 + 5; // Distance from center
+    
+    // Pick random scenery type
+    const randomScenery = availableScenery[Math.floor(Math.random() * availableScenery.length)];
+    
+    // Get scenery from GLB
+    const sceneryObject = getSceneryFromGLB(randomScenery);
+    
+    if (!sceneryObject) {
+        console.error(`Failed to spawn scenery: ${randomScenery}`);
+        return;
     }
+    
+    // Position the scenery
+    sceneryObject.position.x = side * distance;
+    sceneryObject.position.z = -50; // Spawn far away
+    
+    // Add metadata for animations
+    sceneryObject.userData.sceneryType = randomScenery;
+    
+    // Special setup for animated scenery
+    if (randomScenery === 'fireflySwarm' || randomScenery === 'ancientOak') {
+        // Store animation data for fireflies and orbs
+        sceneryObject.traverse((child) => {
+            if (child.userData.floatSpeed || child.userData.orbitSpeed) {
+                // Preserve animation data
+                child.userData.basePosition = child.position.clone();
+            }
+        });
+    }
+    
+    scene.add(sceneryObject);
+    sceneryObjects.push(sceneryObject);
+    
+    debug(`🌳 Spawned ${randomScenery} scenery at x:${sceneryObject.position.x}`);
 }
-            
-            sceneryObject.position.x = side * distance;
-            sceneryObject.position.z = -50; // Spawn far away
-            scene.add(sceneryObject);
-            sceneryObjects.push(sceneryObject);
-        }
-        
+
+
         function createTree() {
             const treeGroup = new THREE.Group();
             
