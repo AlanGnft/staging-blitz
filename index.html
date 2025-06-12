@@ -1524,6 +1524,7 @@ let sideTerrainSegments = []; // Store side terrain segments for movement
         
         // Weather and environment variables
         let skyLight;
+        let ambientLight;  // ADD THIS LINE
         let weatherParticles = [];
         let currentWeather = "clear"; // clear, rain, snow
         let targetWeather = "clear"; // For smooth transitions
@@ -2448,11 +2449,13 @@ loadWorldScenery(currentWorld).then(() => {
             document.body.appendChild(renderer.domElement);
             
             // Add lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);  // Remove 'const' to use global variable
             scene.add(ambientLight);
             
+            // Add directional light (sunlight)
             skyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            skyLight.position.set(10, 20, 0);
+            skyLight.position.set(10, 20, 10);
+            skyLight.castShadow = true;
             scene.add(skyLight);
             
             // Load textures
