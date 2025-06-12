@@ -1428,7 +1428,7 @@ firebase.initializeApp(firebaseConfig);
 <script src="worlds/desert.js"></script>
 <script src="systems/obstacles.js"></script>
 <!--   <script src="obstacle-pack-converter.js"></script>   OBSTACLE GLB CONVERTER -->
-<!--   <script src="scenery-pack-converter.js"></script>   SCENERY GLB CONVERTER -->
+<!----><script src="scenery-pack-converter.js"></script>   <!--SCENERY GLB CONVERTER -->
 <script src="systems/audio.js"></script>
 <script src="systems/powerups.js"></script>
 
@@ -2426,10 +2426,17 @@ loadWorldScenery(currentWorld).then(() => {
             camera.position.set(0, 2, 5);
             camera.lookAt(0, 0, -10);
             
-            // Create renderer (without the optimization for now)
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.shadowMap.enabled = true;
-            renderer.setPixelRatio(window.devicePixelRatio);
+            // Detect if mobile
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Create renderer with performance optimizations
+renderer = new THREE.WebGLRenderer({ 
+    antialias: !isMobile, // Disable antialiasing on mobile
+    powerPreference: "high-performance"
+});
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.autoUpdate = false; // Update shadows manually if needed
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
             
             // Add lights
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -8081,21 +8088,6 @@ function spawnScenery() {
     debug(`🌳 Spawned ${randomScenery} scenery at x:${sceneryObject.position.x}`);
 }
 
-// Memory cleanup function for scenery disposal
-function removeScenery(sceneryObject) {
-    scene.remove(sceneryObject);
-    sceneryObject.traverse((child) => {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-            if (Array.isArray(child.material)) {
-                child.material.forEach(mat => mat.dispose());
-            } else {
-                child.material.dispose();
-            }
-        }
-    });
-}
-
         
         // Create a coin with improved shiny gold appearance
         function spawnCoin() {
@@ -9978,10 +9970,10 @@ for (let i = sceneryObjects.length - 1; i >= 0; i--) {
     // Only run complex animations for nearby scenery
     if (!shouldAnimateObject(scenery, 20)) {
         // Skip animations for distant objects
-if (scenery.position.z > 20) {
-    removeScenery(scenery); // Use cleanup function
-    sceneryObjects.splice(i, 1);
-}
+        if (scenery.position.z > 20) {
+            scene.remove(scenery);
+            sceneryObjects.splice(i, 1);
+        }
         continue;
     }
     
@@ -10026,10 +10018,10 @@ if (scenery.position.z > 20) {
     }
     
     // Remove scenery that has passed the player
-if (scenery.position.z > 20) {
-    removeScenery(scenery); // Use cleanup function
-    sceneryObjects.splice(i, 1);
-}
+    if (scenery.position.z > 20) {
+        scene.remove(scenery);
+        sceneryObjects.splice(i, 1);
+    }
 }
 
 // Update meteors
