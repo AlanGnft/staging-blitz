@@ -4432,12 +4432,7 @@ function applyWorldSettings(world) {
         skyLight.intensity = world.lighting.directional.intensity;
     }
     
-    // In applyWorldSettings function, after setting colors:
-    if (world.id === 'underwater') {
-        createUnderwaterEffects();
-    } else {
-        removeUnderwaterEffects();
-    }
+    
     // In applyWorldSettings function, after the underwater effects code:
         if (world.id === 'underwater') {
             createUnderwaterEffects();
@@ -10755,22 +10750,7 @@ if (meteor.position.y < -1 || meteor.position.z > player.position.z + 15) {
         // Initialize on load
         document.addEventListener('DOMContentLoaded', init);
 
-        // Create underwater visual effects
-function createUnderwaterEffects() {
-    if (currentWorld !== 'underwater') return;
     
-    // Deep ocean blue - darker and more underwater feeling
-    scene.background = new THREE.Color(0x0a3d5f); // Deep ocean blue
-}
-
-
-// Remove underwater effects when leaving
-function removeUnderwaterEffects() {
-    // Just restore the normal background color
-    if (currentWorld && window.currentWorldData) {
-        scene.background = new THREE.Color(window.currentWorldData.colors.sky);
-    }
-}
 
         // ==================== AUTOMATIC SAVE SYSTEM ====================
 // Save game data when page closes or periodically
