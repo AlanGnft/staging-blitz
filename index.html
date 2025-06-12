@@ -1426,9 +1426,10 @@ firebase.initializeApp(firebaseConfig);
 <!-- CHARACTER INJECTION POINT - Additional characters will be loaded here -->
 <script src="worlds/forest.js"></script>
 <script src="worlds/desert.js"></script>
+<script src="worlds/underwater.js"></script>
 <script src="systems/obstacles.js"></script>
-<!--   <script src="obstacle-pack-converter.js"></script>   OBSTACLE GLB CONVERTER -->
-<!----><script src="scenery-pack-converter.js"></script>   <!--SCENERY GLB CONVERTER -->
+<!----   <script src="obstacle-pack-converter.js"></script>   !--OBSTACLE GLB CONVERTER -->
+<!----   <script src="scenery-pack-converter.js"></script>    !--SCENERY GLB CONVERTER -->
 <script src="systems/audio.js"></script>
 <script src="systems/powerups.js"></script>
 
@@ -1888,6 +1889,21 @@ let availableWorlds = [
         lighting: {
             ambient: { color: 0xFFE4B5, intensity: 0.7 },
             directional: { color: 0xFFF8DC, intensity: 1.0 }
+        }
+    },
+    {  // ADD THIS UNDERWATER WORLD
+        id: 'underwater',
+        name: 'Ocean Depths',
+        description: 'Explore the mysterious underwater realm with coral reefs and sea creatures',
+        cost: 15000,
+        colors: {
+            sky: 0x004466,
+            fog: 0x003355,
+            ground: 0x334455
+        },
+        lighting: {
+            ambient: { color: 0x224466, intensity: 0.5 },
+            directional: { color: 0x88BBDD, intensity: 0.4 }
         }
     }
 ];
@@ -4173,7 +4189,98 @@ function createWorldPreviewModel(world) {
     shimmer.rotation.x = -Math.PI / 2;
     shimmer.position.y = 0.01;
     previewGroup.add(shimmer);
+} else if (world.id === 'underwater') {
+    // Create underwater preview
+    
+    // Ocean floor
+    const groundGeometry = new THREE.BoxGeometry(4, 0.2, 4);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+        color: world.colors.ground,
+        roughness: 0.9
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.position.y = -0.1;
+    previewGroup.add(ground);
+    
+    // Add coral pieces
+    for (let i = 0; i < 5; i++) {
+        const coralGeometry = new THREE.SphereGeometry(0.15, 8, 6);
+        const coralColors = [0xFF6B9D, 0xFFA500, 0x00CED1, 0xFFD700];
+        const coralMaterial = new THREE.MeshStandardMaterial({
+            color: coralColors[Math.floor(Math.random() * coralColors.length)],
+            roughness: 0.7
+        });
+        const coral = new THREE.Mesh(coralGeometry, coralMaterial);
+        coral.position.set(
+            (Math.random() - 0.5) * 3,
+            0.1,
+            (Math.random() - 0.5) * 3
+        );
+        coral.scale.set(1, 0.6, 1);
+        previewGroup.add(coral);
+    }
+    
+    // Add seaweed
+    for (let i = 0; i < 6; i++) {
+        const seaweedGeometry = new THREE.CylinderGeometry(0.02, 0.04, 0.6, 6);
+        const seaweedMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2F4F2F,
+            roughness: 0.8
+        });
+        const seaweed = new THREE.Mesh(seaweedGeometry, seaweedMaterial);
+        seaweed.position.set(
+            (Math.random() - 0.5) * 3,
+            0.3,
+            (Math.random() - 0.5) * 3
+        );
+        seaweed.rotation.x = (Math.random() - 0.5) * 0.3;
+        seaweed.rotation.z = (Math.random() - 0.5) * 0.3;
+        previewGroup.add(seaweed);
+    }
+    
+    // Add a fish
+    const fishGeometry = new THREE.SphereGeometry(0.1, 8, 6);
+    const fishMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1E90FF,
+        metalness: 0.3,
+        roughness: 0.5
+    });
+    const fish = new THREE.Mesh(fishGeometry, fishMaterial);
+    fish.scale.set(1.5, 0.7, 0.5);
+    fish.position.set(0.5, 0.8, 0);
+    fish.rotation.y = Math.PI / 4;
+    previewGroup.add(fish);
+    
+    // Fish tail
+    const tailGeometry = new THREE.ConeGeometry(0.06, 0.15, 4);
+    const tail = new THREE.Mesh(tailGeometry, fishMaterial);
+    tail.position.set(0.35, 0.8, -0.1);
+    tail.rotation.z = -Math.PI / 2;
+    tail.scale.set(0.5, 1.2, 1);
+    previewGroup.add(tail);
+    
+    // Add bubbles
+    for (let i = 0; i < 8; i++) {
+        const bubbleGeometry = new THREE.SphereGeometry(0.03, 6, 6);
+        const bubbleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xE0FFFF,
+            transparent: true,
+            opacity: 0.4,
+            metalness: 0.8,
+            roughness: 0.1
+        });
+        const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+        bubble.position.set(
+            (Math.random() - 0.5) * 2,
+            0.2 + Math.random() * 1.5,
+            (Math.random() - 0.5) * 2
+        );
+        previewGroup.add(bubble);
+    }
 }
+
+
+
     
     // Scale up the preview to fill the rectangle better
 previewGroup.scale.set(1.5, 1.5, 1.5);
@@ -4319,6 +4426,13 @@ function applyWorldSettings(world) {
         skyLight.intensity = world.lighting.directional.intensity;
     }
     
+    // In applyWorldSettings function, after setting colors:
+    if (world.id === 'underwater') {
+        createUnderwaterEffects();
+    } else {
+        removeUnderwaterEffects();
+    }
+
     // Store current world data for other systems to use
     window.currentWorldData = world;
     
@@ -10282,6 +10396,104 @@ for (let i = sceneryObjects.length - 1; i >= 0; i--) {
             }
         });
     }
+
+    // Animate underwater-specific scenery
+else if (currentWorld === 'underwater' && scenery.userData.sceneryType) {
+    scenery.children.forEach(child => {
+        // Animate kelp swaying
+        if (child.userData && child.userData.swaySpeed) {
+            const sway = Math.sin(frameCount * child.userData.swaySpeed + child.userData.swayOffset) * child.userData.swayAmount;
+            child.rotation.z = (child.userData.originalRotation || 0) + sway;
+            
+            // Kelp also bends slightly forward/back
+            child.rotation.x = Math.sin(frameCount * child.userData.swaySpeed * 0.7 + child.userData.swayOffset) * child.userData.swayAmount * 0.5;
+        }
+        
+        // Animate fish swimming
+        if (child.userData && child.userData.swimSpeed) {
+            // Horizontal swimming motion
+            const swimX = Math.sin(frameCount * child.userData.swimSpeed + child.userData.swimOffset) * 0.3;
+            child.position.x = child.userData.basePosition.x + swimX;
+            
+            // Gentle vertical floating
+            const floatY = Math.sin(frameCount * child.userData.swimSpeed * 0.5) * child.userData.verticalFloat;
+            child.position.y = child.userData.basePosition.y + floatY;
+            
+            // Slight body rotation for swimming motion
+            child.rotation.z = Math.sin(frameCount * child.userData.swimSpeed * 2) * 0.1;
+            child.rotation.y = Math.sin(frameCount * child.userData.swimSpeed) * 0.2;
+        }
+        
+        // Animate bubbles rising
+        if (child.userData && child.userData.riseSpeed) {
+            child.position.y += child.userData.riseSpeed;
+            
+            // Wobble as they rise
+            const wobbleX = Math.sin(frameCount * child.userData.wobbleSpeed) * child.userData.wobbleAmount;
+            const wobbleZ = Math.cos(frameCount * child.userData.wobbleSpeed) * child.userData.wobbleAmount;
+            child.position.x += wobbleX * 0.01;
+            child.position.z += wobbleZ * 0.01;
+            
+            // Reset bubble when it gets too high
+            if (child.position.y > 5) {
+                child.position.y = child.userData.startY || 0;
+                // Reset to original X/Z position
+                child.position.x = (Math.random() - 0.5) * 0.3;
+                child.position.z = (Math.random() - 0.5) * 0.3;
+            }
+            
+            // Bubbles get slightly bigger as they rise
+            const scaleIncrease = 1 + (child.position.y / 10);
+            child.scale.setScalar(child.userData.size * scaleIncrease);
+        }
+        
+        // Animate jellyfish
+        if (child.userData && child.userData.floatSpeed) {
+            // Gentle floating up and down
+            const floatY = Math.sin(frameCount * child.userData.floatSpeed) * child.userData.floatRange;
+            child.position.y = child.userData.baseY + floatY;
+            
+            // Pulsing bell animation
+            const pulse = Math.sin(frameCount * child.userData.pulseSpeed) * 0.1 + 1;
+            if (child.children[0]) { // Bell mesh
+                child.children[0].scale.set(pulse, pulse * 0.8, pulse);
+            }
+            
+            // Animate tentacles
+            child.children.forEach((tentacle, index) => {
+                if (tentacle.userData && tentacle.userData.waveSpeed) {
+                    const wave = Math.sin(frameCount * tentacle.userData.waveSpeed + tentacle.userData.waveOffset) * tentacle.userData.waveAmount;
+                    tentacle.rotation.x = wave;
+                    tentacle.rotation.z = wave * 0.5;
+                }
+            });
+        }
+        
+        // Animate seaweed on sunken ship
+        if (child.userData && child.userData.waveSpeed && scenery.userData.sceneryType === 'sunkenShip') {
+            const wave = Math.sin(frameCount * child.userData.waveSpeed) * child.userData.waveAmount;
+            child.rotation.z = wave;
+            child.rotation.x = Math.PI / 6 + wave * 0.5;
+        }
+    });
+    
+    // School of fish group movement
+    if (scenery.userData && scenery.userData.schoolSpeed) {
+        scenery.userData.schoolDirection += Math.sin(frameCount * 0.001) * 0.01;
+        scenery.rotation.y = scenery.userData.schoolDirection;
+        
+        // Gentle up/down movement for the whole school
+        scenery.position.y = scenery.userData.baseY + Math.sin(frameCount * 0.01) * 0.3;
+    }
+}
+
+// Animate caustic lighting (add this inside the underwater animation block)
+if (window.causticLight && frameCount) {
+    const causticIntensity = 0.2 + Math.sin(frameCount * 0.03) * 0.1;
+    window.causticLight.intensity = causticIntensity;
+    window.causticLight.position.x = 5 + Math.sin(frameCount * 0.02) * 2;
+    window.causticLight.position.z = 5 + Math.cos(frameCount * 0.02) * 2;
+}
     
     // Remove scenery that has passed the player
     if (scenery.position.z > 20) {
@@ -10370,6 +10582,43 @@ if (meteor.position.y < -1 || meteor.position.z > player.position.z + 15) {
         
         // Initialize on load
         document.addEventListener('DOMContentLoaded', init);
+
+        // Create underwater visual effects
+function createUnderwaterEffects() {
+    if (currentWorld !== 'underwater') return;
+    
+    // Add blue fog for underwater depth
+    scene.fog = new THREE.Fog(0x003366, 10, 50);
+    
+    // Adjust lighting for underwater ambiance
+    if (ambientLight) {
+        ambientLight.color.setHex(0x224466);
+        ambientLight.intensity = 0.5;
+    }
+    
+    if (skyLight) {
+        skyLight.color.setHex(0x88BBDD);
+        skyLight.intensity = 0.4;
+        skyLight.position.set(0, 10, 0); // Light from above (surface)
+    }
+    
+    // Add caustic light effect (optional - for extra realism)
+    if (!window.causticLight) {
+        window.causticLight = new THREE.DirectionalLight(0x88CCFF, 0.2);
+        window.causticLight.position.set(5, 10, 5);
+        scene.add(window.causticLight);
+    }
+}
+
+// Remove underwater effects when leaving
+function removeUnderwaterEffects() {
+    scene.fog = null;
+    
+    if (window.causticLight) {
+        scene.remove(window.causticLight);
+        window.causticLight = null;
+    }
+}
 
         // ==================== AUTOMATIC SAVE SYSTEM ====================
 // Save game data when page closes or periodically
