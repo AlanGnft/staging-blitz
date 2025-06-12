@@ -6277,9 +6277,118 @@ if (currentWorld === 'desert') {
         scene.add(dune);
     }
  } else if (currentWorld === 'underwater') {
-    // No mountains underwater! Maybe add distant coral formations or underwater cliffs
-    // For now, just skip the mountain creation
-    return;
+        // Create distant coral reef formations instead of mountains
+        
+        // Large coral formations in the distance
+        for (let i = 0; i < 8; i++) {
+            const coralGroup = new THREE.Group();
+            
+            // Base rock formation
+            const rockGeometry = new THREE.DodecahedronGeometry(
+                Math.random() * 15 + 10, // 10-25 radius
+                1
+            );
+            const rockMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a4a5a, // Dark blue-grey
+                roughness: 1
+            });
+            const rock = new THREE.Mesh(rockGeometry, rockMaterial);
+            rock.scale.y = Math.random() * 0.5 + 0.5; // Flatten it
+            coralGroup.add(rock);
+            
+            // Add colorful coral clusters
+            const coralColors = [0x4a7c8e, 0x5a8ca0, 0x3a6c7e];
+            for (let j = 0; j < 5; j++) {
+                const coralGeometry = new THREE.SphereGeometry(
+                    Math.random() * 3 + 2,
+                    8,
+                    6
+                );
+                const coralMaterial = new THREE.MeshStandardMaterial({
+                    color: coralColors[Math.floor(Math.random() * coralColors.length)],
+                    roughness: 0.8
+                });
+                const coral = new THREE.Mesh(coralGeometry, coralMaterial);
+                coral.position.set(
+                    (Math.random() - 0.5) * 10,
+                    Math.random() * 5,
+                    (Math.random() - 0.5) * 10
+                );
+                coral.scale.y = 0.6; // Flatten coral pieces
+                coralGroup.add(coral);
+            }
+            
+            // Position the coral formations
+            const angle = (i / 8) * Math.PI * 2;
+            const distance = Math.random() * 40 + 60; // 60-100 units away
+            coralGroup.position.set(
+                Math.cos(angle) * distance,
+                Math.random() * 10 - 15, // Vary height
+                -100 + Math.sin(angle) * distance
+            );
+            
+            // Random rotation for variety
+            coralGroup.rotation.y = Math.random() * Math.PI * 2;
+            
+            scene.add(coralGroup);
+        }
+        
+        // Add some distant kelp forests
+        for (let i = 0; i < 6; i++) {
+            const kelpGroup = new THREE.Group();
+            
+            // Create tall kelp strands
+            for (let j = 0; j < 10; j++) {
+                const kelpGeometry = new THREE.CylinderGeometry(
+                    0.5, 1, 30, 6
+                );
+                const kelpMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x1a3a2a, // Dark green
+                    roughness: 0.9
+                });
+                const kelp = new THREE.Mesh(kelpGeometry, kelpMaterial);
+                kelp.position.set(
+                    (Math.random() - 0.5) * 8,
+                    15,
+                    (Math.random() - 0.5) * 8
+                );
+                kelpGroup.add(kelp);
+            }
+            
+            // Position kelp forests
+            const angle = (i / 6) * Math.PI * 2;
+            const distance = Math.random() * 30 + 80;
+            kelpGroup.position.set(
+                Math.cos(angle) * distance,
+                -10,
+                -100 + Math.sin(angle) * distance
+            );
+            
+            scene.add(kelpGroup);
+        }
+        
+        // Add a few distant rock spires
+        for (let i = 0; i < 4; i++) {
+            const spireGeometry = new THREE.ConeGeometry(8, 40, 8);
+            const spireMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1f3f4f, // Very dark blue-grey
+                roughness: 1
+            });
+            const spire = new THREE.Mesh(spireGeometry, spireMaterial);
+            
+            const angle = (i / 4) * Math.PI * 2 + Math.PI / 8;
+            const distance = Math.random() * 20 + 90;
+            spire.position.set(
+                Math.cos(angle) * distance,
+                -5,
+                -120 + Math.sin(angle) * distance
+            );
+            spire.rotation.z = (Math.random() - 0.5) * 0.3;
+            
+            scene.add(spire);
+        }
+        
+        return; // Skip the normal mountain creation
 
 } else if (currentWorld === 'forest') {
     // Create forest mountains
@@ -10682,10 +10791,8 @@ if (meteor.position.y < -1 || meteor.position.z > player.position.z + 15) {
 function createUnderwaterEffects() {
     if (currentWorld !== 'underwater') return;
     
-    // Simple blue background - just like other worlds have solid colors
-    scene.background = new THREE.Color(0x1a4d6b); // Ocean blue, but not too dark
-    
-    // That's it! No fog, no particles, no special lighting changes
+    // Deep ocean blue - darker and more underwater feeling
+    scene.background = new THREE.Color(0x0a3d5f); // Deep ocean blue
 }
 
 
