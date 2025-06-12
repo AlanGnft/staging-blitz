@@ -2426,17 +2426,10 @@ loadWorldScenery(currentWorld).then(() => {
             camera.position.set(0, 2, 5);
             camera.lookAt(0, 0, -10);
             
-            // Detect if mobile
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// Create renderer with performance optimizations
-renderer = new THREE.WebGLRenderer({ 
-    antialias: !isMobile, // Disable antialiasing on mobile
-    powerPreference: "high-performance"
-});
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.autoUpdate = false; // Update shadows manually if needed
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+            // Create renderer (without the optimization for now)
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(window.devicePixelRatio);
             
             // Add lights
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
