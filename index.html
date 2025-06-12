@@ -1558,7 +1558,8 @@ const obstacleModels = new Map();
 const worldObstaclePacks = {
     classic: 'assets/obstacles/obstacles_classic_mobile.glb',
     forest: 'assets/obstacles/obstacles_forest_mobile.glb',
-    desert: 'assets/obstacles/obstacles_desert_mobile.glb'
+    desert: 'assets/obstacles/obstacles_desert_mobile.glb',
+    underwater: 'assets/obstacles/obstacles_underwater_mobile.glb'  // ADD THIS
 };
 let currentWorldObstaclesLoaded = false;
 
@@ -1653,7 +1654,8 @@ console.log('Cached obstacles:', Array.from(obstacleModels.keys()));
 const validObstacles = {
     classic: ['rock', 'treeStump', 'log', 'bush', 'spikes'],
     forest: ['treeRoot', 'thornBush', 'fallenBranch', 'mushroomRing', 'puddlePatch'],
-    desert: ['cactus', 'sandDune', 'quicksand', 'ancientRuin']
+    desert: ['cactus', 'sandDune', 'quicksand', 'ancientRuin'],
+    underwater: ['coralReef', 'giantClam', 'seaweedTangle', 'sunkenAnchor', 'rockFormation']  // ADD THIS
 };
 
 const expectedObstacles = validObstacles[worldName] || [];
@@ -1713,7 +1715,8 @@ const sceneryModels = new Map();
 const worldSceneryPacks = {
     classic: 'assets/scenery/scenery_classic_mobile.glb',
     forest: 'assets/scenery/scenery_forest_mobile.glb',
-    desert: 'assets/scenery/scenery_desert_mobile.glb'
+    desert: 'assets/scenery/scenery_desert_mobile.glb',
+    underwater: 'assets/scenery/scenery_underwater_mobile.glb'  // ADD THIS
 };
 
 // Track if scenery is loaded for current world
@@ -6181,6 +6184,11 @@ if (currentWorld === 'desert') {
         
         scene.add(dune);
     }
+ } else if (currentWorld === 'underwater') {
+    // No mountains underwater! Maybe add distant coral formations or underwater cliffs
+    // For now, just skip the mountain creation
+    return;
+    
 } else if (currentWorld === 'forest') {
     // Create forest mountains
     for (let i = 0; i < 20; i++) {
