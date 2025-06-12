@@ -1723,7 +1723,8 @@ async function loadWorldScenery(worldName) {
     console.log(`🌳 Loading ${worldName} scenery...`);
     
     return new Promise((resolve, reject) => {
-        gltfLoader.load(
+            const loader = new THREE.GLTFLoader();
+            loader.load(
             packPath,
             (gltf) => {
                 console.log(`✅ Loaded ${worldName} scenery pack`);
