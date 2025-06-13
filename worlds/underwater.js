@@ -6,7 +6,7 @@ const UnderwaterWorld = {
     cost: 15000, // Make it a premium world
     
     colors: {
-        sky: 0x011d2b,      // Deep ocean blue
+        sky: 0x03111a,      // Deep ocean blue
         fog: 0x003355,      // Darker blue fog for depth
         ground: 0x334455    // Ocean floor color
     },
