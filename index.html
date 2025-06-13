@@ -1522,15 +1522,9 @@ let sideTerrainSegments = []; // Store side terrain segments for movement
         let pendingScore = 0;
         const MAX_LEADERBOARD_ENTRIES = 10;
         
-        // Weather and environment variables
+        // Environment variables
         let skyLight;
         let ambientLight;  // ADD THIS LINE
-        let weatherParticles = [];
-        let currentWeather = "clear"; // clear, rain, snow
-        let targetWeather = "clear"; // For smooth transitions
-        let weatherChangeCounter = 0;
-        let weatherChangeDuration = 1800; // Frames until weather change (1 minute at 30fps)
-        let weatherTransitionProgress = 0; // For smooth transitions
         let time = 0; // Time of day (0-1), 0 = day, 0.5 = sunset, 1 = night
         let timeCycleSpeed = 0.0001; // How fast time cycles
         let butterflyGroups = [];
@@ -2308,7 +2302,6 @@ function updateSpeedIndicator() {
 // Mobile performance settings - define after checkMobile() is called
         let mobileSparkleCount = isMobile ? 8 : 20;        // Fewer sparkles on mobile
         let mobileExplosionCount = isMobile ? 15 : 30;     // Fewer explosion particles
-        let mobileWeatherCount = isMobile ? 150 : 500;     // Much fewer weather particles
         let mobileButterflyLimit = isMobile ? 3 : 10;      // Fewer butterflies
         let mobileBirdsLimit = isMobile ? 2 : 5;           // Fewer birds
 
@@ -2472,9 +2465,7 @@ loadWorldScenery(currentWorld).then(() => {
             
             // Create player based on selected character
             createPlayer();
-            
-            // Add weather systems
-            initializeWeatherSystems();
+        
             
             // Initialize dynamic difficulty
             resetDynamicDifficulty();
@@ -3271,33 +3262,7 @@ function showGlobalLeaderboard() {
             }
         }
         
-        // Weather systems with smooth transitions
-        function initializeWeatherSystems() {
-            // Initialize with clear weather
-            currentWeather = "clear";
-            targetWeather = "clear";
-            weatherTransitionProgress = 1; // Fully transitioned to start
-            
-            setWeather("clear");
-        }
-        
-        function setWeather(weatherType) {
-            // Start transition to new weather
-            targetWeather = weatherType;
-            weatherTransitionProgress = 0;
-            
-            // If no current weather particles exist, instantly create the new weather
-            if (weatherParticles.length === 0 && weatherType !== "clear") {
-                if (weatherType === "rain") {
-                    createRainSystem();
-                } else if (weatherType === "snow") {
-                    createSnowSystem();
-                }
-            }
-            
-            // Reset weather change counter
-            weatherChangeCounter = 0;
-        }
+
         
 // ==================== TITLE SCREEN SYSTEM ====================
 // Title screen, animations, and initial game presentation
@@ -5023,265 +4988,60 @@ case "ghost":
             }
         }
 
-function createRainSystem() {
-            const rainCount = isMobile ? 150 : 500;
-            const rainGeometry = new THREE.BoxGeometry(0.03, 0.2, 0.03);
-            const rainMaterial = new THREE.MeshBasicMaterial({
-                color: 0x9ACEEB, // Light blue
-                transparent: true,
-                opacity: 0.6
-            });
-            
-            for (let i = 0; i < rainCount; i++) {
-                const raindrop = new THREE.Mesh(rainGeometry, rainMaterial);
-                
-                // Randomize positions in a large area around the player
-                raindrop.position.set(
-                    Math.random() * 80 - 40,
-                    Math.random() * 30 + 10,
-                    Math.random() * 80 - 100
-                );
-                
-                // Set raindrop speed and properties
-                raindrop.userData.speed = Math.random() * 0.3 + 0.2;
-                raindrop.userData.horizontalSpeed = Math.random() * 0.05 - 0.025;
-                raindrop.userData.weatherType = "rain";
-                
-                scene.add(raindrop);
-                weatherParticles.push(raindrop);
-            }
-            
-            // Target sky color for rain (not immediate)
-            targetSkyColor = new THREE.Color(0x556677); // Darker sky
-        }
-        
-        function createSnowSystem() {
-            const snowCount = isMobile ? 120 : 400;
-            const snowGeometry = new THREE.SphereGeometry(0.05, 6, 6);
-            const snowMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.8
-            });
-            
-            for (let i = 0; i < snowCount; i++) {
-                const snowflake = new THREE.Mesh(snowGeometry, snowMaterial);
-                
-                // Randomize positions in a large area around the player
-                snowflake.position.set(
-                    Math.random() * 80 - 40,
-                    Math.random() * 30 + 10,
-                    Math.random() * 80 - 100
-                );
-                
-                // Set snowflake speed and properties
-                snowflake.userData.speed = Math.random() * 0.1 + 0.05;
-                snowflake.userData.horizontalSpeed = Math.random() * 0.03 - 0.015;
-                snowflake.userData.wobbleSpeed = Math.random() * 0.02 + 0.01;
-                snowflake.userData.wobbleAmount = Math.random() * 0.1;
-                snowflake.userData.wobblePosition = Math.random() * Math.PI * 2;
-                snowflake.userData.weatherType = "snow";
-                
-                scene.add(snowflake);
-                weatherParticles.push(snowflake);
-            }
-            
-            // Target sky color for snow (gradual transition)
-            targetSkyColor = new THREE.Color(0xc8d8f0); // Light blue-gray sky
-        }
-        
-        function updateWeather() {
-            // Progress the transition between weather types
-            if (weatherTransitionProgress < 1) {
-                weatherTransitionProgress += 0.005; // Slow transition
-                
-                // Gradually adjust the sky color
-                scene.background.lerp(targetSkyColor, 0.005);
-                
-                // Gradually adjust light intensity based on target weather
-                let targetIntensity = 0.8; // Default for clear
-                if (targetWeather === "rain") {
-                    targetIntensity = 0.5;
-                } else if (targetWeather === "snow") {
-                    targetIntensity = 0.7;
-                }
-                
-                // Apply time of day modifications to target intensity
-                if (time < 0.3 || time > 0.7) {
-                    // Lower light during dawn/dusk/night
-                    targetIntensity *= (time > 0.85 || time < 0.2) ? 0.4 : 0.75;
-                }
-                
-                skyLight.intensity += (targetIntensity - skyLight.intensity) * 0.01;
-                
-                // Remove particles of the weather type we're transitioning away from
-                if (targetWeather !== currentWeather && weatherTransitionProgress > 0.5) {
-                    for (let i = weatherParticles.length - 1; i >= 0; i--) {
-                        const particle = weatherParticles[i];
-                        if (particle.userData.weatherType === currentWeather) {
-                            // Fade out the particle
-                            if (particle.material.opacity > 0.05) {
-                                particle.material.opacity -= 0.05;
-                            } else {
-                                scene.remove(particle);
-                                weatherParticles.splice(i, 1);
-                            }
-                        }
-                    }
-                    
-                    // If we've removed all particles of the old type, and we need to create new ones
-                    if (weatherParticles.length === 0 && targetWeather !== "clear") {
-                        if (targetWeather === "rain") {
-                            createRainSystem();
-                        } else if (targetWeather === "snow") {
-                            createSnowSystem();
-                        }
-                    }
-                }
-                
-                // If transition is complete, update current weather
-                if (weatherTransitionProgress >= 1) {
-                    currentWeather = targetWeather;
-                }
-            }
-            
-            // Update weather particles
-            for (let i = weatherParticles.length - 1; i >= 0; i--) {
-                const particle = weatherParticles[i];
-                
-                if (particle.userData.weatherType === "rain") {
-                    // Move raindrop down and slightly sideways
-                    particle.position.y -= particle.userData.speed;
-                    particle.position.x += particle.userData.horizontalSpeed;
-                    particle.position.z += currentSpeed; // Move with scene
-                    
-                    // Reset if too low or behind camera
-                    if (particle.position.y < -2 || particle.position.z > 10) {
-                        particle.position.set(
-                            Math.random() * 80 - 40,
-                            Math.random() * 20 + 20,
-                            Math.random() * 40 - 120
-                        );
-                    }
-                } else if (particle.userData.weatherType === "snow") {
-                    // Move snowflake down with wobble and slightly sideways
-                    particle.position.y -= particle.userData.speed;
-                    
-                    // Add wobble effect
-                    particle.userData.wobblePosition += particle.userData.wobbleSpeed;
-                    particle.position.x += Math.sin(particle.userData.wobblePosition) * particle.userData.wobbleAmount + particle.userData.horizontalSpeed;
-                    
-                    particle.position.z += currentSpeed; // Move with scene
-                    particle.rotation.y += 0.01; // Rotate snowflake
-                    
-                    // Reset if too low or behind camera
-                    if (particle.position.y < -2 || particle.position.z > 10) {
-                        particle.position.set(
-                            Math.random() * 80 - 40,
-                            Math.random() * 20 + 20,
-                            Math.random() * 40 - 120
-                        );
-                        particle.userData.wobblePosition = Math.random() * Math.PI * 2;
-                    }
-                }
-            }
-            
-            // Check if it's time to change weather
-            weatherChangeCounter++;
-            if (weatherChangeCounter > weatherChangeDuration) {
-                const roll = Math.random();
-                if (currentWeather === "clear") {
-                    // 40% chance of rain, 20% chance of snow when clear
-                    if (roll < 0.4) setWeather("rain");
-                    else if (roll < 0.6) setWeather("snow");
-                    else setWeather("clear");
-                } else {
-                    // 60% chance of clear when raining or snowing
-                    if (roll < 0.6) setWeather("clear");
-                    else if (currentWeather === "rain" && roll < 0.8) setWeather("snow");
-                    else if (currentWeather === "snow" && roll < 0.8) setWeather("rain");
-                    else setWeather(currentWeather);
-                }
-            }
-            
-            // Update time of day
-            updateTimeOfDay();
-        }
-        
+     
         function updateTimeOfDay() {
-            time += timeCycleSpeed;
-            if (time > 1) time = 0;
-            
-            // Calculate target sky color based on time
-            let timeSkyColor;
-            if (time < 0.25) { // Morning
-                timeSkyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xFFA07A), time * 4);
-            } else if (time < 0.3) { // Sunrise
-                timeSkyColor = new THREE.Color(0xFFA07A).lerp(new THREE.Color(0x87CEEB), (time - 0.25) * 20);
-            } else if (time < 0.7) { // Day
-                timeSkyColor = new THREE.Color(0x87CEEB);
-            } else if (time < 0.8) { // Sunset
-                timeSkyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xFF7F50), (time - 0.7) * 10);
-            } else if (time < 0.85) { // Dusk
-                timeSkyColor = new THREE.Color(0xFF7F50).lerp(new THREE.Color(0x191970), (time - 0.8) * 20);
-            } else { // Night
-                timeSkyColor = new THREE.Color(0x191970);
-            }
-            
-            // Blend weather sky color with time of day sky color
-            if (currentWeather === "clear") {
-                targetSkyColor = timeSkyColor;
-            } else {
-                // For weather conditions, gradually blend with time-of-day
-                const weatherInfluence = 0.7; // Weather has 70% influence
-                const timeInfluence = 1 - weatherInfluence;
-                
-                // Create a blended target
-                const blendedTarget = targetSkyColor.clone();
-                blendedTarget.lerp(timeSkyColor, timeInfluence);
-                targetSkyColor = blendedTarget;
-            }
-            
-            // Gradually shift sky color
-            scene.background.lerp(targetSkyColor, 0.005);
-            
-            // Adjust light intensity based on time (smooth transition)
-            let targetIntensity;
-            if (time < 0.3 || time > 0.7) {
-                // Lower light during dawn/dusk/night
-                targetIntensity = (time > 0.85 || time < 0.2) ? 0.3 : 0.6;
-            } else if (currentWeather === "clear") {
-                // Full daylight
-                targetIntensity = 0.8;
-            } else if (currentWeather === "rain") {
-                // Dimmer for rain
-                targetIntensity = 0.5;
-            } else if (currentWeather === "snow") {
-                // Moderate for snow
-                targetIntensity = 0.7;
-            } else {
-                targetIntensity = 0.8;
-            }
-            
-            // Smooth transition for light intensity
-            skyLight.intensity += (targetIntensity - skyLight.intensity) * 0.01;
-            
-            // Adjust light color based on time
-            let targetLightColor;
-            if (time < 0.3) { // Morning
-                targetLightColor = new THREE.Color(0xFFD580);
-            } else if (time < 0.7) { // Day
-                targetLightColor = new THREE.Color(0xFFFFFF);
-            } else if (time < 0.85) { // Evening
-                targetLightColor = new THREE.Color(0xFFA07A);
-            } else { // Night
-                targetLightColor = new THREE.Color(0x4169E1);
-            }
-            
-            // Smooth transition for light color
-            skyLight.color.lerp(targetLightColor, 0.01);
-        }
-        
+    // Skip time of day changes for underwater world
+    if (currentWorld === 'underwater') {
+        return;
+    }
+    
+    time += timeCycleSpeed;
+    if (time > 1) time = 0;
+    
+    // Calculate sky color based on time only (no weather)
+    let targetSkyColor;
+    if (time < 0.25) { // Morning
+        targetSkyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xFFA07A), time * 4);
+    } else if (time < 0.3) { // Sunrise
+        targetSkyColor = new THREE.Color(0xFFA07A).lerp(new THREE.Color(0x87CEEB), (time - 0.25) * 20);
+    } else if (time < 0.7) { // Day
+        targetSkyColor = new THREE.Color(0x87CEEB);
+    } else if (time < 0.8) { // Sunset
+        targetSkyColor = new THREE.Color(0x87CEEB).lerp(new THREE.Color(0xFF7F50), (time - 0.7) * 10);
+    } else if (time < 0.85) { // Dusk
+        targetSkyColor = new THREE.Color(0xFF7F50).lerp(new THREE.Color(0x191970), (time - 0.8) * 20);
+    } else { // Night
+        targetSkyColor = new THREE.Color(0x191970);
+    }
+    
+    // Apply sky color
+    scene.background.lerp(targetSkyColor, 0.005);
+    
+    // Adjust light intensity based on time
+    let targetIntensity;
+    if (time < 0.3 || time > 0.7) {
+        targetIntensity = (time > 0.85 || time < 0.2) ? 0.3 : 0.6;
+    } else {
+        targetIntensity = 0.8;
+    }
+    
+    skyLight.intensity += (targetIntensity - skyLight.intensity) * 0.01;
+    
+    // Adjust light color based on time
+    let targetLightColor;
+    if (time < 0.3) {
+        targetLightColor = new THREE.Color(0xFFD580);
+    } else if (time < 0.7) {
+        targetLightColor = new THREE.Color(0xFFFFFF);
+    } else if (time < 0.85) {
+        targetLightColor = new THREE.Color(0xFFA07A);
+    } else {
+        targetLightColor = new THREE.Color(0x4169E1);
+    }
+    
+    skyLight.color.lerp(targetLightColor, 0.01);
+}
+
         function updateButterfliesAndBirds() {
             // Update butterflies
             for (let i = butterflyGroups.length - 1; i >= 0; i--) {
@@ -5337,7 +5097,7 @@ function createRainSystem() {
             }
             
             // Spawn new butterflies/beetles occasionally - world-specific
-if (Math.random() < 0.005 && butterflyGroups.length < mobileButterflyLimit && currentWeather === "clear") {
+if (Math.random() < 0.005 && butterflyGroups.length < mobileButterflyLimit) {
     // Don't spawn in underwater world!
     if (currentWorld !== 'underwater') {
         const x = Math.random() * 40 - 20;
@@ -9804,7 +9564,6 @@ function isInCameraView(object) {
 
     // Staggered updates for performance - different systems update on different frames
     const updateSchedule = {
-        weather: frameCount % 3 === 0,      // Update weather every 3rd frame
         butterflies: frameCount % 4 === 0,   // Update butterflies every 4th frame  
         scenery: frameCount % 2 === 0,       // Update scenery every 2nd frame
         particles: frameCount % 2 === 1      // Update particles on alternating frames
@@ -10182,7 +9941,6 @@ updatePowerUpStatusBar();
 updateAbilityStatusBar();
                 
                 // Staggered updates for better performance
-                if (updateSchedule.weather) updateWeather();
                 if (updateSchedule.butterflies) updateButterfliesAndBirds();
                 
                 // Update water streams
@@ -10737,8 +10495,6 @@ if (meteor.position.y < -1 || meteor.position.z > player.position.z + 15) {
                 updateExplosion();
                 // Continue updating sparkles even in game over state
                 updateSparkles();
-                // Continue updating weather in game over state
-                updateWeather();
                 updateButterfliesAndBirds();
             }
             
