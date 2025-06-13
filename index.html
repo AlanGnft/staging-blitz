@@ -26,6 +26,28 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Add debug logging
+console.log('🔥 Firebase initialized, starting save system...');
+
+// Force initialize save system after page loads
+setTimeout(() => {
+    if (typeof initializeSaveSystem === 'function') {
+        console.log('✅ initializeSaveSystem function found, calling...');
+        initializeSaveSystem();
+    } else {
+        console.error('❌ initializeSaveSystem function not found! Retrying...');
+        // Try again after more delay
+        setTimeout(() => {
+            if (typeof initializeSaveSystem === 'function') {
+                console.log('✅ initializeSaveSystem function found on retry, calling...');
+                initializeSaveSystem();
+            } else {
+                console.error('❌ initializeSaveSystem function still not found after retry!');
+            }
+        }, 2000);
+    }
+}, 1000);
 </script>
 
     <style>
@@ -993,25 +1015,6 @@ firebase.initializeApp(firebaseConfig);
 </p>
 </div>
 
-    <!-- Add this near your existing title screen buttons -->
-    <button onclick="showTitleSettings()" class="game-button" 
-    style="
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        padding: 10px;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-    ">
-    ⚙️
-</button>
-
     <style>
         /* Keep your existing pulse animation */
         @keyframes pulse {
@@ -1163,11 +1166,196 @@ firebase.initializeApp(firebaseConfig);
     </style>
 </div>
 
+<!-- Main Menu Screen -->
+<div id="mainMenuScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; background: linear-gradient(to bottom, #000428, #004e92); overflow: hidden;">
+    <!-- Background particles (reuse same container) -->
+    <div class="particle-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 1;"></div>
+    
+    <!-- Main Menu Title -->
+    <h1 style="color: white; font-size: 56px; margin-bottom: 40px; text-shadow: 0 0 10px #00a2ff, 0 0 20px #00a2ff; position: relative; z-index: 10; text-align: center;">Main Menu</h1>
+    
+    <!-- Menu Options -->
+    <div style="display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 10; width: 300px;">
+        <button id="runButton" class="game-button" style="font-size: 24px; padding: 15px 30px; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+            🏃 RUN
+        </button>
+        
+        <button id="charactersButton" class="game-button" style="font-size: 24px; padding: 15px 30px; background-color: #2196F3; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+            👤 CHARACTERS
+        </button>
+        
+        <button id="shopButton" class="game-button" style="font-size: 24px; padding: 15px 30px; background-color: #FF9800; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+            🛒 SHOP
+        </button>
+        
+        <button id="mainMenuSettingsButton" class="game-button" style="font-size: 24px; padding: 15px 30px; background-color: #9C27B0; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+            ⚙️ SETTINGS
+        </button>
+        
+        <button id="profileButton" class="game-button" style="font-size: 24px; padding: 15px 30px; background-color: #607D8B; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+            📊 PROFILE
+        </button>
+    </div>
+</div>
+
 <!--------- BUTTONS & UI SECTION--------->
 <!--==============================-->
 <!--==============================-->
 
 
+
+
+
+<!-- Main Menu Settings Screen -->
+<div id="mainMenuSettingsScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <div style="background: rgba(0, 20, 40, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); position: relative;">
+        
+        <!-- Back Button -->
+        <button id="backToMainMenuFromSettings" style="position: absolute; top: 15px; left: 15px; background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
+        
+        <!-- Settings Title -->
+        <h2 style="color: white; margin: 0 0 30px 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 28px;">⚙️ Settings</h2>
+        
+        <!-- Audio Settings Section -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">🔊 Audio Settings</h3>
+            
+            <label style="display: flex; align-items: center; margin: 12px 0; cursor: pointer;">
+                <input type="checkbox" id="mainMenuMusicCheckbox" style="margin-right: 12px; transform: scale(1.3);">
+                <span style="font-size: 16px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">🎵 Background Music</span>
+            </label>
+            
+            <label style="display: flex; align-items: center; margin: 12px 0; cursor: pointer;">
+                <input type="checkbox" id="mainMenuSoundCheckbox" style="margin-right: 12px; transform: scale(1.3);">
+                <span style="font-size: 16px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">🔊 Sound Effects</span>
+            </label>
+        </div>
+        
+        <!-- Save System Section -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">💾 Save System</h3>
+            
+            <div id="authStatusDisplay" style="margin-bottom: 15px; text-align: center;">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <button id="generateSaveCodeBtn" style="background: #34C759; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px;">📱 Get Save Code</button>
+                <button id="restoreSaveCodeBtn" style="background: #FF9500; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px;">📥 Use Save Code</button>
+                <button id="googleAuthBtn" style="background: #4285f4; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔗 Google Sign In</button>
+            </div>
+        </div>
+        
+        <!-- Mod Options Section -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">🔧 Mod Options</h3>
+            
+            <div style="margin: 15px 0;">
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 16px;">Mod Mode</h4>
+                <p style="color: #ccc; margin: 0 0 10px 0; font-size: 14px;">Unlock all content temporarily</p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="password" id="mainMenuModPassword" placeholder="Enter password" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; flex: 1; min-width: 150px;">
+                    <button id="mainMenuModModeBtn" style="background: #9C27B0; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">Enable</button>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 16px;">Reset Game Data</h4>
+                <p style="color: #ccc; margin: 0 0 10px 0; font-size: 14px;">Clear all saved progress</p>
+                <button id="mainMenuResetDataBtn" style="background: #F44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">🗑️ Reset All Data</button>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Shop Screen -->
+<div id="shopScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <div style="background: rgba(0, 20, 40, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px; border-radius: 20px; max-width: 600px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); position: relative;">
+        
+        <!-- Back Button -->
+        <button id="backToMainMenuFromShop" style="position: absolute; top: 15px; left: 15px; background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
+        
+        <!-- Shop Title -->
+        <h2 style="color: white; margin: 0 0 30px 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 28px;">🛒 Shop</h2>
+        
+        <!-- Current Coins Display -->
+        <div style="text-align: center; margin-bottom: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.3);">
+            <h3 style="color: #FFD700; margin: 0; font-size: 24px;">💰 <span id="shopCoinsDisplay">0</span> Coins</h3>
+        </div>
+        
+        <!-- Characters Section -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">👤 Characters</h3>
+            <div id="shopCharactersList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Worlds Section -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">🌍 Worlds</h3>
+            <div id="shopWorldsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Profile Screen -->
+<div id="profileScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <div style="background: rgba(0, 20, 40, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); position: relative;">
+        
+        <!-- Back Button -->
+        <button id="backToMainMenuFromProfile" style="position: absolute; top: 15px; left: 15px; background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
+        
+        <!-- Profile Title -->
+        <h2 style="color: white; margin: 0 0 30px 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 28px;">📊 Profile</h2>
+        
+        <!-- Profile Info -->
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="width: 100px; height: 100px; background: linear-gradient(45deg, #4CAF50, #2196F3); border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; font-size: 48px;">
+                🏃
+            </div>
+            <h3 style="color: white; margin: 0 0 5px 0; font-size: 24px;" id="profilePlayerName">Anonymous Runner</h3>
+            <p style="color: #ccc; margin: 0; font-size: 16px;">Dash Blitz Player</p>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0;">
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; color: #FFD700; font-weight: bold;" id="profileHighScore">0</div>
+                <div style="color: #ccc; font-size: 14px;">High Score</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; color: #4CAF50; font-weight: bold;" id="profileTotalCoins">0</div>
+                <div style="color: #ccc; font-size: 14px;">Total Coins</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; color: #2196F3; font-weight: bold;" id="profileCharactersUnlocked">1</div>
+                <div style="color: #ccc; font-size: 14px;">Characters</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 24px; color: #FF9800; font-weight: bold;" id="profileWorldsUnlocked">1</div>
+                <div style="color: #ccc; font-size: 14px;">Worlds</div>
+            </div>
+        </div>
+        
+        <!-- Coming Soon Features -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 18px;">🚀 Coming Soon</h3>
+            <ul style="color: #ccc; margin: 0; padding-left: 20px;">
+                <li>🏆 Achievements System</li>
+                <li>📈 Detailed Statistics</li>
+                <li>🎨 Character Customization</li>
+                <li>👥 Friend Leaderboards</li>
+                <li>🎯 Daily Challenges</li>
+            </ul>
+        </div>
+        
+    </div>
+</div>
 
 <div id="characterSelectScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; background: linear-gradient(to bottom, #000428, #004e92);">
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" id="characterSelectCanvas"></div>
@@ -1182,7 +1370,10 @@ firebase.initializeApp(firebaseConfig);
         <p id="characterDescription" style="font-size: 18px;">Classic runner</p>
         <p id="characterUnlockStatus" style="font-size: 16px; color: #4CAF50;">Unlocked</p>
     </div>
-    <button id="startGameButton" class="game-button" style="font-size: 32px; padding: 15px 50px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; position: relative; z-index: 10; animation: pulse 1.5s infinite;">RUN!</button>
+    <div style="display: flex; gap: 20px; position: relative; z-index: 10;">
+        <button id="backToMainMenuFromCharacters" class="game-button" style="font-size: 24px; padding: 12px 25px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">← BACK</button>
+        <button id="selectCharacterButton" class="game-button" style="font-size: 32px; padding: 15px 50px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; animation: pulse 1.5s infinite;">SELECT</button>
+    </div>
 </div>
 <!-- World Select Screen -->
 <div id="worldSelectScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; background: linear-gradient(to bottom, #000428, #004e92); padding: 20px; box-sizing: border-box;">
@@ -1200,7 +1391,10 @@ firebase.initializeApp(firebaseConfig);
         <p id="worldDescription" style="font-size: 18px; word-wrap: break-word; padding: 0 10px;">Rolling green hills and peaceful meadows</p>
         <p id="worldUnlockStatus" style="font-size: 16px; color: #4CAF50;">Unlocked</p>
     </div>
-    <button id="startGameFromWorldButton" class="game-button" style="font-size: 32px; padding: 15px 50px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; position: relative; z-index: 10; animation: pulse 1.5s infinite; max-width: calc(100vw - 40px); word-wrap: break-word;">START ADVENTURE!</button>
+    <div style="display: flex; gap: 20px; position: relative; z-index: 10; flex-wrap: wrap; justify-content: center;">
+        <button id="backToMainMenuFromWorld" class="game-button" style="font-size: 24px; padding: 12px 25px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">← BACK</button>
+        <button id="startGameFromWorldButton" class="game-button" style="font-size: 32px; padding: 15px 50px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; animation: pulse 1.5s infinite; max-width: calc(100vw - 120px); word-wrap: break-word;">START ADVENTURE!</button>
+    </div>
 </div>
 
 <!-- Game Over Screen -->
@@ -1219,7 +1413,7 @@ firebase.initializeApp(firebaseConfig);
     </div>
     <div class="game-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto;">
         <button id="restartButton" class="game-button">Restart</button>
-        <button id="gameOverCharactersBtn" class="game-button">Characters</button>
+        <button id="gameOverMainMenuBtn" class="game-button">Main Menu</button>
         <button id="gameOverSettingsBtn" class="game-button">Settings</button>
     </div>
 </div>
@@ -1240,7 +1434,7 @@ firebase.initializeApp(firebaseConfig);
     <div class="game-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto;">
         <button id="resumeButton" class="game-button">Resume Game</button>
         <button id="pauseRestartButton" class="game-button">Restart</button>
-        <button id="pauseCharactersBtn" class="game-button">Characters</button>
+        <button id="pauseMainMenuBtn" class="game-button">Main Menu</button>
         <button id="pauseSettingsBtn" class="game-button">Settings</button>
     </div>
 </div>
@@ -2506,11 +2700,11 @@ loadWorldScenery(currentWorld).then(() => {
             // Use onclick instead of addEventListener for more reliability
             document.getElementById('startButton').onclick = startGame;
             document.getElementById('restartButton').onclick = restartGame;
-            document.getElementById('gameOverCharactersBtn').onclick = showCharacterSelectScreen;
+            document.getElementById('gameOverMainMenuBtn').onclick = showMainMenuFromGameOver;
             document.getElementById('gameOverSettingsBtn').onclick = toggleSettingsFromGameOver;
             document.getElementById('resumeButton').onclick = togglePause;
             document.getElementById('pauseRestartButton').onclick = restartFromPause;
-            document.getElementById('pauseCharactersBtn').onclick = showCharacterSelectScreenFromPause;
+            document.getElementById('pauseMainMenuBtn').onclick = showMainMenuFromPause;
             document.getElementById('pauseSettingsBtn').onclick = toggleSettingsFromPause;
             document.getElementById('pauseBtn').onclick = togglePause;
             document.getElementById('closeSettingsButton').onclick = closeSettingsScreen;
@@ -2556,30 +2750,30 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
 
         // Setup settings UI
         function setupSettingsUI() {
-// Initialize jukebox
+    // Initialize jukebox
     initializeJukebox();
 
-            // Update mod mode UI
-if (modModeEnabled) {
-    document.getElementById('mod-mode-option').classList.add('enabled');
-    document.getElementById('modModeButton').textContent = 'Disable';
-    
-    // Show difficulty override option since mod mode is active
-    const difficultyOption = document.getElementById('difficulty-override-option');
-    if (difficultyOption) {
-        difficultyOption.style.display = 'flex';
-    }
-} else {
-    document.getElementById('mod-mode-option').classList.remove('enabled');
-    document.getElementById('modModeButton').textContent = 'Enable';
-    
-    // Hide difficulty override option since mod mode is inactive
-    const difficultyOption = document.getElementById('difficulty-override-option');
-    if (difficultyOption) {
-        difficultyOption.style.display = 'none';
+    // Update mod mode UI based on CURRENT state
+    if (modModeEnabled) {
+        document.getElementById('mod-mode-option').classList.add('enabled');
+        document.getElementById('modModeButton').textContent = 'Disable';
+        
+        // Show difficulty override option since mod mode is active
+        const difficultyOption = document.getElementById('difficulty-override-option');
+        if (difficultyOption) {
+            difficultyOption.style.display = 'flex';
+        }
+    } else {
+        document.getElementById('mod-mode-option').classList.remove('enabled');
+        document.getElementById('modModeButton').textContent = 'Enable';
+        
+        // Hide difficulty override option since mod mode is inactive
+        const difficultyOption = document.getElementById('difficulty-override-option');
+        if (difficultyOption) {
+            difficultyOption.style.display = 'none';
+        }
     }
 }
-        }
 
         // Initialize jukebox system
 function initializeJukebox() {
@@ -3508,15 +3702,15 @@ setTimeout(() => {
                 clearTitleParticles();
             }
             
-            // Hide title screen, show character selection screen
+            // Hide title screen, show main menu
             document.getElementById('titleScreen').style.display = 'none';
-            document.getElementById('characterSelectScreen').style.display = 'flex';
+            document.getElementById('mainMenuScreen').style.display = 'flex';
             
-            // Initialize the character selection screen
-            initCharacterSelectScreen();
+            // Initialize main menu (create particles for background)
+            initMainMenu();
             
             // Update game state
-            gameState = "characterSelect";
+            gameState = "mainMenu";
         });
         debug('Start button event listener added successfully!');
     } else {
@@ -3526,6 +3720,417 @@ setTimeout(() => {
 
 
 
+}
+
+// Initialize Main Menu
+function initMainMenu() {
+    // Create floating particles for main menu background
+    createMainMenuParticles();
+    
+    // Setup main menu button event listeners
+    setupMainMenuButtons();
+}
+
+// Create particles for main menu (similar to title screen)
+function createMainMenuParticles() {
+    const particleContainer = document.querySelector('#mainMenuScreen .particle-container');
+    if (!particleContainer) return;
+    
+    // Clear existing particles
+    particleContainer.innerHTML = '';
+    
+    // Create CSS particles
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.width = Math.random() * 8 + 4 + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 8 + 's';
+        particle.style.animationDuration = (Math.random() * 6 + 8) + 's';
+        particleContainer.appendChild(particle);
+    }
+}
+
+// Setup main menu button event listeners
+function setupMainMenuButtons() {
+    // RUN button - goes to world select
+    document.getElementById('runButton').addEventListener('click', function() {
+        document.getElementById('mainMenuScreen').style.display = 'none';
+        document.getElementById('worldSelectScreen').style.display = 'flex';
+        initWorldSelectScreen();
+        gameState = "worldSelect";
+    });
+    
+    // CHARACTERS button - goes to character select (no longer leads to world select)
+    document.getElementById('charactersButton').addEventListener('click', function() {
+        document.getElementById('mainMenuScreen').style.display = 'none';
+        document.getElementById('characterSelectScreen').style.display = 'flex';
+        initCharacterSelectScreen();
+        gameState = "characterSelect";
+    });
+    
+// SHOP button - show shop screen
+    document.getElementById('shopButton').addEventListener('click', function() {
+        document.getElementById('mainMenuScreen').style.display = 'none';
+        document.getElementById('shopScreen').style.display = 'flex';
+        initShopScreen();
+        gameState = "shop";
+    });
+    
+    // SETTINGS button - will create dedicated settings screen
+    document.getElementById('mainMenuSettingsButton').addEventListener('click', function() {
+        showMainMenuSettings();
+    });
+    
+    // PROFILE button - show profile screen
+    document.getElementById('profileButton').addEventListener('click', function() {
+        document.getElementById('mainMenuScreen').style.display = 'none';
+        document.getElementById('profileScreen').style.display = 'flex';
+        initProfileScreen();
+        gameState = "profile";
+    });
+}
+
+// Show main menu settings screen
+function showMainMenuSettings() {
+    document.getElementById('mainMenuScreen').style.display = 'none';
+    document.getElementById('mainMenuSettingsScreen').style.display = 'flex';
+    gameState = "mainMenuSettings";
+    
+    // Initialize settings screen
+    initMainMenuSettings();
+}
+
+// Initialize main menu settings screen
+function initMainMenuSettings() {
+    // Update audio checkbox states
+    document.getElementById('mainMenuMusicCheckbox').checked = backgroundMusicEnabled;
+    document.getElementById('mainMenuSoundCheckbox').checked = soundEffectsEnabled;
+    
+    // Update auth status display
+    updateAuthStatusDisplay();
+    
+    // Setup event listeners
+    setupMainMenuSettingsListeners();
+}
+
+// Update authentication status display
+function updateAuthStatusDisplay() {
+    const authDisplay = document.getElementById('authStatusDisplay');
+    const googleBtn = document.getElementById('googleAuthBtn');
+    
+    // Check if user is signed in with Google (if Firebase is available)
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        const currentUser = firebase.auth().currentUser;
+        const isSignedIn = currentUser && !currentUser.isAnonymous;
+        
+        if (isSignedIn) {
+            authDisplay.innerHTML = `<p style="color: #34C759; font-size: 14px;">✅ Signed in as ${currentUser.displayName}<br><small style="color: #999;">Your progress syncs across all devices!</small></p>`;
+            googleBtn.textContent = '🔓 Sign Out';
+            googleBtn.style.background = '#666';
+        } else {
+            authDisplay.innerHTML = `<p style="color: #FF9500; font-size: 14px;">⚠️ Not signed in<br><small style="color: #999;">Sign in to sync progress across devices</small></p>`;
+            googleBtn.textContent = '🔗 Sign in with Google';
+            googleBtn.style.background = '#4285f4';
+        }
+    } else {
+        authDisplay.innerHTML = `<p style="color: #999; font-size: 14px;">📱 Use save codes to transfer progress</p>`;
+        googleBtn.style.display = 'none';
+    }
+}
+
+// Setup main menu settings event listeners
+function setupMainMenuSettingsListeners() {
+    // Back button
+    document.getElementById('backToMainMenuFromSettings').addEventListener('click', function() {
+        document.getElementById('mainMenuSettingsScreen').style.display = 'none';
+        document.getElementById('mainMenuScreen').style.display = 'flex';
+        gameState = "mainMenu";
+    });
+    
+    // Audio settings
+    document.getElementById('mainMenuMusicCheckbox').addEventListener('change', function() {
+        backgroundMusicEnabled = this.checked;
+        saveGameData('settings_change');
+    });
+    
+    document.getElementById('mainMenuSoundCheckbox').addEventListener('change', function() {
+        soundEffectsEnabled = this.checked;
+        saveGameData('settings_change');
+    });
+    
+    // Save code buttons
+    document.getElementById('generateSaveCodeBtn').addEventListener('click', showSaveCode);
+    document.getElementById('restoreSaveCodeBtn').addEventListener('click', showRestoreCode);
+    
+    // Google auth button
+    document.getElementById('googleAuthBtn').addEventListener('click', function() {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            const currentUser = firebase.auth().currentUser;
+            const isSignedIn = currentUser && !currentUser.isAnonymous;
+            
+            if (isSignedIn) {
+                signOutGoogle();
+            } else {
+                signInWithGoogle();
+            }
+            
+            // Update display after auth change
+            setTimeout(updateAuthStatusDisplay, 1000);
+        }
+    });
+    
+    // Mod mode
+    document.getElementById('mainMenuModModeBtn').addEventListener('click', function() {
+        const password = document.getElementById('mainMenuModPassword').value;
+        
+        if (password === 'unlock123') { // Use your actual mod password
+            modModeEnabled = !modModeEnabled;
+            saveGameData('mod_toggle');
+            
+            if (modModeEnabled) {
+                alert('🔓 Mod Mode Enabled! All content unlocked.');
+                this.textContent = 'Disable';
+                this.style.background = '#F44336';
+            } else {
+                alert('🔒 Mod Mode Disabled.');
+                this.textContent = 'Enable';
+                this.style.background = '#9C27B0';
+            }
+            
+            document.getElementById('mainMenuModPassword').value = '';
+        } else {
+            alert('❌ Incorrect password!');
+        }
+    });
+    
+    // Reset data
+    document.getElementById('mainMenuResetDataBtn').addEventListener('click', function() {
+        if (confirm('⚠️ Are you sure you want to reset ALL game data? This cannot be undone!')) {
+            if (confirm('🚨 This will delete all progress, unlocks, and settings. Continue?')) {
+                // Reset all game data
+                localStorage.clear();
+                alert('✅ All game data has been reset. The page will now reload.');
+                location.reload();
+            }
+        }
+    });
+}
+
+// Initialize shop screen
+function initShopScreen() {
+    // Update coins display
+    document.getElementById('shopCoinsDisplay').textContent = totalCoins;
+    
+    // Populate characters list
+    populateShopCharacters();
+    
+    // Populate worlds list
+    populateShopWorlds();
+    
+    // Setup shop event listeners
+    setupShopListeners();
+}
+
+// Populate shop characters
+function populateShopCharacters() {
+    const charactersList = document.getElementById('shopCharactersList');
+    charactersList.innerHTML = '';
+    
+    characterNames.forEach(charName => {
+        const isUnlocked = unlockedCharacters[charName] || modModeEnabled;
+        const cost = characterCosts[charName] || 100; // Default cost if not defined
+        
+        const characterItem = document.createElement('div');
+        characterItem.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid ${isUnlocked ? '#4CAF50' : '#666'};
+        `;
+        
+        characterItem.innerHTML = `
+            <h4 style="color: white; margin: 0 0 10px 0; text-transform: capitalize;">${charName}</h4>
+            <div style="color: ${isUnlocked ? '#4CAF50' : '#FFD700'}; font-size: 14px; margin-bottom: 10px;">
+                ${isUnlocked ? '✅ Unlocked' : `💰 ${cost} coins`}
+            </div>
+            ${!isUnlocked ? `
+                <button onclick="purchaseCharacter('${charName}')" 
+                    style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Purchase
+                </button>
+            ` : `
+                <button onclick="selectCharacterFromShop('${charName}')" 
+                    style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Select
+                </button>
+            `}
+        `;
+        
+        charactersList.appendChild(characterItem);
+    });
+}
+
+// Populate shop worlds
+function populateShopWorlds() {
+    const worldsList = document.getElementById('shopWorldsList');
+    worldsList.innerHTML = '';
+    
+    availableWorlds.forEach(world => {
+        const isUnlocked = unlockedWorlds[world.id] || modModeEnabled;
+        
+        const worldItem = document.createElement('div');
+        worldItem.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid ${isUnlocked ? '#4CAF50' : '#666'};
+        `;
+        
+        worldItem.innerHTML = `
+            <h4 style="color: white; margin: 0 0 10px 0;">${world.name}</h4>
+            <p style="color: #ccc; font-size: 12px; margin: 0 0 10px 0;">${world.description}</p>
+            <div style="color: ${isUnlocked ? '#4CAF50' : '#FFD700'}; font-size: 14px; margin-bottom: 10px;">
+                ${isUnlocked ? '✅ Unlocked' : `💰 ${world.cost} coins`}
+            </div>
+            ${!isUnlocked ? `
+                <button onclick="purchaseWorld('${world.id}')" 
+                    style="background: #FF9800; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Purchase
+                </button>
+            ` : `
+                <button onclick="selectWorldFromShop('${world.id}')" 
+                    style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Select
+                </button>
+            `}
+        `;
+        
+        worldsList.appendChild(worldItem);
+    });
+}
+
+// Setup shop event listeners
+function setupShopListeners() {
+    document.getElementById('backToMainMenuFromShop').addEventListener('click', function() {
+        document.getElementById('shopScreen').style.display = 'none';
+        document.getElementById('mainMenuScreen').style.display = 'flex';
+        gameState = "mainMenu";
+    });
+}
+
+// Purchase character from shop
+function purchaseCharacter(charName) {
+    const cost = characterCosts[charName] || 100;
+    
+    if (unlockedCharacters[charName]) {
+        alert('✅ Character already unlocked!');
+        return;
+    }
+    
+    if (totalCoins >= cost) {
+        totalCoins -= cost;
+        unlockedCharacters[charName] = true;
+        updateTotalCoins();
+        saveGameData('character_purchase');
+        alert(`✅ ${charName} unlocked!`);
+        
+        // Refresh shop display
+        initShopScreen();
+    } else {
+        alert(`❌ Not enough coins! You need ${cost} coins to unlock ${charName}.`);
+    }
+}
+
+// Purchase world from shop
+function purchaseWorld(worldId) {
+    const world = availableWorlds.find(w => w.id === worldId);
+    if (!world) return;
+    
+    if (unlockedWorlds[worldId]) {
+        alert('✅ World already unlocked!');
+        return;
+    }
+    
+    if (totalCoins >= world.cost) {
+        totalCoins -= world.cost;
+        unlockedWorlds[worldId] = true;
+        updateTotalCoins();
+        saveGameData('world_purchase');
+        alert(`✅ ${world.name} unlocked!`);
+        
+        // Refresh shop display
+        initShopScreen();
+    } else {
+        alert(`❌ Not enough coins! You need ${world.cost} coins to unlock ${world.name}.`);
+    }
+}
+
+// Select character from shop
+function selectCharacterFromShop(charName) {
+    currentCharacter = charName;
+    createPlayer();
+    alert(`✅ ${charName} selected!`);
+}
+
+// Select world from shop
+function selectWorldFromShop(worldId) {
+    const world = availableWorlds.find(w => w.id === worldId);
+    if (world) {
+        currentWorld = worldId;
+        alert(`✅ ${world.name} selected!`);
+    }
+}
+
+// Initialize profile screen
+function initProfileScreen() {
+    // Update profile display
+    updateProfileDisplay();
+    
+    // Setup profile event listeners
+    setupProfileListeners();
+}
+
+// Update profile display
+function updateProfileDisplay() {
+    // Update player name (from Google auth or default)
+    const nameElement = document.getElementById('profilePlayerName');
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        const currentUser = firebase.auth().currentUser;
+        if (currentUser && !currentUser.isAnonymous && currentUser.displayName) {
+            nameElement.textContent = currentUser.displayName;
+        } else {
+            nameElement.textContent = 'Anonymous Runner';
+        }
+    } else {
+        nameElement.textContent = 'Anonymous Runner';
+    }
+    
+    // Update high score
+    document.getElementById('profileHighScore').textContent = highScore;
+    
+    // Update total coins
+    document.getElementById('profileTotalCoins').textContent = totalCoins;
+    
+    // Count unlocked characters
+    const unlockedCharCount = characterNames.filter(char => unlockedCharacters[char]).length;
+    document.getElementById('profileCharactersUnlocked').textContent = unlockedCharCount;
+    
+    // Count unlocked worlds
+    const unlockedWorldCount = availableWorlds.filter(world => unlockedWorlds[world.id]).length;
+    document.getElementById('profileWorldsUnlocked').textContent = unlockedWorldCount;
+}
+
+// Setup profile event listeners
+function setupProfileListeners() {
+    document.getElementById('backToMainMenuFromProfile').addEventListener('click', function() {
+        document.getElementById('profileScreen').style.display = 'none';
+        document.getElementById('mainMenuScreen').style.display = 'flex';
+        gameState = "mainMenu";
+    });
 }
 
 // Create character models for the title screen
@@ -3770,6 +4375,9 @@ const newNextBtn = nextBtn.cloneNode(true);
 prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
 nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
 
+// Update arrow button visibility based on unlocked characters
+updateCharacterArrowVisibility();
+
 // Add fresh event listeners
 document.getElementById('prevCharacterBtn').addEventListener('click', function() {
     // Hide current model
@@ -3806,9 +4414,31 @@ document.getElementById('nextCharacterBtn').addEventListener('click', function()
     // Update info display
     updateCharacterInfo();
 });
+
+// Function to show/hide character navigation arrows
+function updateCharacterArrowVisibility() {
+    const unlockedCount = characterNames.filter(char => unlockedCharacters[char] || modModeEnabled).length;
+    const prevBtn = document.getElementById('prevCharacterBtn');
+    const nextBtn = document.getElementById('nextCharacterBtn');
+    
+    if (unlockedCount <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+}
             
-            // Start game button - now goes to world select
-document.getElementById('startGameButton').addEventListener('click', function() {
+            // Back to main menu button
+document.getElementById('backToMainMenuFromCharacters').addEventListener('click', function() {
+    document.getElementById('characterSelectScreen').style.display = 'none';
+    document.getElementById('mainMenuScreen').style.display = 'flex';
+    gameState = "mainMenu";
+});
+
+// Select character button - just selects character and returns to main menu
+document.getElementById('selectCharacterButton').addEventListener('click', function() {
     // Check if character is unlocked
     const selectedChar = characterNames[selectedCharacterIndex];
     
@@ -3817,15 +4447,13 @@ document.getElementById('startGameButton').addEventListener('click', function() 
         currentCharacter = selectedChar;
         createPlayer(); // Update player model
         
-        // Hide character selection screen and show world selection
+        // Show success message
+        alert(`✅ ${characterNames[selectedCharacterIndex]} selected!`);
+        
+        // Return to main menu
         document.getElementById('characterSelectScreen').style.display = 'none';
-        document.getElementById('worldSelectScreen').style.display = 'flex';
-        
-        // Initialize world selection screen
-        initWorldSelectScreen();
-        
-        // Update game state
-        gameState = "worldSelect";
+        document.getElementById('mainMenuScreen').style.display = 'flex';
+        gameState = "mainMenu";
     } else {
         // Character is locked - ask if they want to unlock
         const cost = characterCosts[selectedChar];
@@ -4279,43 +4907,53 @@ function setupWorldSelectButtons() {
     nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
     startBtn.parentNode.replaceChild(newStartBtn, startBtn);
 
-    // Add fresh event listeners
-    document.getElementById('prevWorldBtn').addEventListener('click', function() {
-        // Hide current model
-        if (worldSelectModels[selectedWorldIndex]) {
-            worldSelectModels[selectedWorldIndex].visible = false;
-        }
-        
-        // Update index (with wrap-around)
-        selectedWorldIndex = (selectedWorldIndex - 1 + availableWorlds.length) % availableWorlds.length;
-        
-        // Show new model
-        if (worldSelectModels[selectedWorldIndex]) {
-            worldSelectModels[selectedWorldIndex].visible = true;
-        }
-        
-        // Update info display
-        updateWorldDisplay();
+   // Update arrow button visibility based on unlocked worlds
+updateWorldArrowVisibility();
+
+// Add fresh event listeners
+document.getElementById('prevWorldBtn').addEventListener('click', function() {
+    // Hide current model
+    if (worldSelectModels[selectedWorldIndex]) {
+        worldSelectModels[selectedWorldIndex].visible = false;
+    }
+    
+    // Update index (with wrap-around)
+    selectedWorldIndex = (selectedWorldIndex - 1 + availableWorlds.length) % availableWorlds.length;
+    
+    // Show new model
+    if (worldSelectModels[selectedWorldIndex]) {
+        worldSelectModels[selectedWorldIndex].visible = true;
+    }
+    
+    // Update info display
+    updateWorldDisplay();
+});
+
+document.getElementById('nextWorldBtn').addEventListener('click', function() {
+    // Hide current model
+    if (worldSelectModels[selectedWorldIndex]) {
+        worldSelectModels[selectedWorldIndex].visible = false;
+    }
+    
+    // Update index (with wrap-around)
+    selectedWorldIndex = (selectedWorldIndex + 1) % availableWorlds.length;
+    
+    // Show new model
+    if (worldSelectModels[selectedWorldIndex]) {
+        worldSelectModels[selectedWorldIndex].visible = true;
+    }
+    
+    // Update info display
+    updateWorldDisplay();
+});
+    
+    // Back to main menu button
+    document.getElementById('backToMainMenuFromWorld').addEventListener('click', function() {
+        document.getElementById('worldSelectScreen').style.display = 'none';
+        document.getElementById('mainMenuScreen').style.display = 'flex';
+        gameState = "mainMenu";
     });
 
-    document.getElementById('nextWorldBtn').addEventListener('click', function() {
-        // Hide current model
-        if (worldSelectModels[selectedWorldIndex]) {
-            worldSelectModels[selectedWorldIndex].visible = false;
-        }
-        
-        // Update index (with wrap-around)
-        selectedWorldIndex = (selectedWorldIndex + 1) % availableWorlds.length;
-        
-        // Show new model
-        if (worldSelectModels[selectedWorldIndex]) {
-            worldSelectModels[selectedWorldIndex].visible = true;
-        }
-        
-        // Update info display
-        updateWorldDisplay();
-    });
-    
     // Start game from world select
     document.getElementById('startGameFromWorldButton').addEventListener('click', function() {
         const selectedWorld = availableWorlds[selectedWorldIndex];
@@ -5456,8 +6094,47 @@ availableWorlds.forEach(world => {
     document.getElementById('difficulty-override-option').style.display = 'none';
     difficultyOverride = -1; // Reset to normal
     
-    // Reload the original unlocked state
-    loadGameData(true);
+    // PROPERLY reload the original saved state
+    const saveKey = `${GAME_ID}_profile_${currentProfileName}`;
+    const savedData = localStorage.getItem(saveKey);
+    
+    if (savedData) {
+        try {
+            const savedProfile = JSON.parse(savedData);
+            // Restore ONLY the unlock states from saved data (don't touch coins/character)
+            unlockedCharacters = {...savedProfile.unlockedCharacters};
+            unlockedWorlds = savedProfile.unlockedWorlds || {classic: true};
+            
+            // Update the current profile to match
+            currentProfile.unlockedCharacters = {...unlockedCharacters};
+            currentProfile.unlockedWorlds = {...unlockedWorlds};
+            currentProfile.modModeEnabled = false;
+            
+            console.log('🔄 Restored unlock states from saved data');
+            console.log('Characters:', unlockedCharacters);
+            console.log('Worlds:', unlockedWorlds);
+        } catch (error) {
+            console.error('Failed to reload saved state:', error);
+            // Fallback to defaults
+            unlockedCharacters = {
+                apple: true,
+                carrot: false,
+                pumpkin: false,
+                happyface: false,
+                monster: false,
+                atom: false,
+                slime: false,
+                ufo: false,
+                robot: false,
+                dragon: false,
+                ghost: false
+            };
+            unlockedWorlds = {classic: true};
+        }
+    }
+    
+    // Save the updated state
+    saveGameData('settings_change');
     
     alert('Mod Mode disabled.');
 }
@@ -6550,7 +7227,6 @@ function signInWithGoogle() {
         });
 }
 
-// Merge current anonymous progress to Google account
 function mergeAnonymousDataToGoogleAccount() {
     if (!currentProfile || !playerId) return;
     
@@ -6562,20 +7238,30 @@ function mergeAnonymousDataToGoogleAccount() {
             const googleData = snapshot.val();
             
             if (googleData) {
-                // Google account has existing data - ask player what to do
+                // Google account has existing data - smart merge needed
                 const googleCoins = googleData.totalCoins || 0;
                 const localCoins = currentProfile.totalCoins || 0;
                 
-                if (confirm(`You have progress on both devices!\n\nThis device: ${localCoins} coins\nGoogle account: ${googleCoins} coins\n\nKeep the higher amount?`)) {
-                    if (localCoins > googleCoins) {
-                        // Keep local data
-                        saveProfile();
-                    } else {
-                        // Use Google data
-                        currentProfile = validateAndMigrateProfile(googleData);
-                        syncProfileToGameState();
-                    }
-                }
+                const googleUnlocks = countUnlocks(googleData);
+                const localUnlocks = countUnlocks(currentProfile);
+                
+                console.log('🔍 Merge comparison:');
+                console.log('Local:', { coins: localCoins, unlocks: localUnlocks });
+                console.log('Google:', { coins: googleCoins, unlocks: googleUnlocks });
+                
+                // Smart merge: combine the best of both
+                const mergedProfile = smartMergeProfiles(currentProfile, googleData);
+                
+                // Seamless auto-merge using unlock-prioritized logic
+                const localMoreProgress = localUnlocks > googleUnlocks || (localUnlocks === googleUnlocks && localCoins <= googleCoins);
+                const primarySource = localMoreProgress ? 'Local' : 'Cloud';
+
+                console.log(`🔄 Auto-syncing: Using ${primarySource} as primary (${localMoreProgress ? localCoins : googleCoins} coins, ${Math.max(localUnlocks, googleUnlocks)} unlocks)`);
+
+                currentProfile = mergedProfile;
+                syncProfileToGameState();
+                saveProfile();
+                showSaveIndicator('☁️ Progress Synced!');
             } else {
                 // No Google data - upload current progress
                 debug('📤 Uploading current progress to Google account...');
@@ -6588,6 +7274,94 @@ function mergeAnonymousDataToGoogleAccount() {
             debug('⚠️ Merge failed, saving current data:', error);
             saveProfile();
         });
+}
+
+// Count total unlocks for comparison
+function countUnlocks(profile) {
+    let count = 0;
+    
+    // Count characters (skip apple since it's default)
+    if (profile.unlockedCharacters) {
+        count += Object.values(profile.unlockedCharacters).filter(unlocked => unlocked).length - 1;
+    }
+    
+    // Count worlds (skip classic since it's default)  
+    if (profile.unlockedWorlds) {
+        count += Object.keys(profile.unlockedWorlds).filter(world => profile.unlockedWorlds[world] && world !== 'classic').length;
+    }
+    
+    return count;
+}
+
+// Smart merge: prioritize whichever profile has MORE UNLOCKS (more progress)
+function smartMergeProfiles(localProfile, cloudProfile) {
+    const localUnlocks = countUnlocks(localProfile);
+    const cloudUnlocks = countUnlocks(cloudProfile);
+    const localCoins = localProfile.totalCoins || 0;
+    const cloudCoins = cloudProfile.totalCoins || 0;
+    
+    console.log('🔍 Progress comparison:');
+    console.log('Local:', { coins: localCoins, unlocks: localUnlocks });
+    console.log('Cloud:', { coins: cloudCoins, unlocks: cloudUnlocks });
+    
+    let primaryProfile, secondaryProfile;
+    
+    if (localUnlocks > cloudUnlocks) {
+        // Local has more unlocks - it's the primary
+        primaryProfile = localProfile;
+        secondaryProfile = cloudProfile;
+        console.log('🎯 Local profile has more progress - using as primary');
+    } else if (cloudUnlocks > localUnlocks) {
+        // Cloud has more unlocks - it's the primary
+        primaryProfile = cloudProfile;
+        secondaryProfile = localProfile;
+        console.log('🎯 Cloud profile has more progress - using as primary');
+    } else {
+        // Same number of unlocks - use the one with FEWER coins (more recent spending)
+        if (localCoins <= cloudCoins) {
+            primaryProfile = localProfile;
+            secondaryProfile = cloudProfile;
+            console.log('🎯 Same unlocks, local has fewer coins (more recent spending) - using local');
+        } else {
+            primaryProfile = cloudProfile;
+            secondaryProfile = localProfile;
+            console.log('🎯 Same unlocks, cloud has fewer coins (more recent spending) - using cloud');
+        }
+    }
+    
+    // Start with the primary profile (the one with more progress)
+    const merged = JSON.parse(JSON.stringify(primaryProfile));
+    
+    // Only add unlocks from secondary if they don't exist in primary
+    // (This handles edge cases where someone unlocked different things on different devices)
+    if (secondaryProfile.unlockedCharacters) {
+        Object.keys(secondaryProfile.unlockedCharacters).forEach(char => {
+            if (secondaryProfile.unlockedCharacters[char] && !merged.unlockedCharacters[char]) {
+                merged.unlockedCharacters[char] = true;
+                console.log('🔄 Added character unlock from secondary profile:', char);
+            }
+        });
+    }
+    
+    if (secondaryProfile.unlockedWorlds) {
+        Object.keys(secondaryProfile.unlockedWorlds).forEach(world => {
+            if (secondaryProfile.unlockedWorlds[world] && !merged.unlockedWorlds[world]) {
+                merged.unlockedWorlds[world] = true;
+                console.log('🔄 Added world unlock from secondary profile:', world);
+            }
+        });
+    }
+    
+    // Keep other progress from primary only (no mixing scores/stats to avoid exploits)
+    
+    console.log('🎯 Anti-exploit merge result:', {
+        coins: merged.totalCoins,
+        characters: Object.values(merged.unlockedCharacters).filter(u => u).length,
+        worlds: Object.keys(merged.unlockedWorlds).filter(w => merged.unlockedWorlds[w]).length,
+        source: primaryProfile === localProfile ? 'local' : 'cloud'
+    });
+    
+    return merged;
 }
 
 // Sign out of Google
@@ -6797,95 +7571,6 @@ function restoreFromInputs() {
     }
 }
 
-function showTitleSettings() {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
-        z-index: 10000; font-family: Arial, sans-serif;
-    `;
-    
-    // Check if user is signed in with Google
-    const currentUser = firebase.auth().currentUser;
-    const isSignedIn = currentUser && !currentUser.isAnonymous;
-    
-    modal.innerHTML = `
-        <div style="
-        background: rgba(0, 20, 40, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 30px;
-        border-radius: 20px;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    ">
-            <h2 style="color: white; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">⚙️ Settings</h2>
-            
-            <!-- Audio Settings -->
-            <div style="margin: 20px 0; text-align: left;">
-                <label style="display: flex; align-items: center; margin: 10px 0; cursor: pointer;">
-                    <input type="checkbox" id="titleMusicCheckbox" ${backgroundMusicEnabled ? 'checked' : ''} 
-                        onchange="backgroundMusicEnabled = this.checked; saveGameData('settings_change');"
-                        style="margin-right: 10px; transform: scale(1.2);">
-                    <span style="font-size: 16px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">🎵 Background Music</span>
-                </label>
-                
-                <label style="display: flex; align-items: center; margin: 10px 0; cursor: pointer;">
-                    <input type="checkbox" id="titleSoundCheckbox" ${soundEffectsEnabled ? 'checked' : ''} 
-                        onchange="soundEffectsEnabled = this.checked; saveGameData('settings_change');"
-                        style="margin-right: 10px; transform: scale(1.2);">
-                    <span style="font-size: 16px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">🔊 Sound Effects</span>
-                </label>
-            </div>
-            
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-            
-            <!-- Save System -->
-            <div style="margin: 20px 0;">
-                <h3 style="color: white; margin-bottom: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">💾 Save System</h3>
-                
-                ${isSignedIn ? `
-                    <p style="color: #34C759; margin-bottom: 15px;">
-                        ✅ Signed in as ${currentUser.displayName}<br>
-                        <small style="color: #666;">Your progress syncs across all devices!</small>
-                    </p>
-                    <button onclick="signOutGoogle(); this.parentElement.parentElement.parentElement.remove();" 
-                        style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin: 5px;">
-                        Sign Out
-                    </button>
-                ` : `
-                    <button onclick="signInWithGoogle(); this.parentElement.parentElement.parentElement.remove();" 
-                        style="background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px;">
-                        🔗 Sign in with Google
-                    </button>
-                `}
-                
-                <br>
-                
-                <button onclick="showSaveCode()" 
-                    style="background: #34C759; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin: 5px;">
-                    📱 Get Save Code
-                </button>
-                
-                <button onclick="showRestoreCode()" 
-                    style="background: #FF9500; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin: 5px;">
-                    📥 Use Save Code
-                </button>
-            </div>
-            
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-            
-            <!-- Close Button -->
-            <button onclick="this.parentElement.parentElement.remove()" 
-                style="background: #007AFF; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">
-                Done
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
 
 // Current save system version - increment when making breaking changes
 const SAVE_VERSION = "1.0";
@@ -6963,6 +7648,18 @@ let cloudSaveEnabled = false;
 
 // Initialize Firebase Auth (anonymous)
 function initializeCloudSave() {
+    console.log('🔥 Starting cloud save initialization...');
+    
+    // Check if already signed in to avoid creating multiple anonymous accounts
+    if (firebase.auth().currentUser) {
+        console.log('🔥 Already authenticated, using existing user');
+        playerId = firebase.auth().currentUser.uid;
+        cloudSaveEnabled = true;
+        syncProfileWithCloud();
+        return;
+    }
+    
+    
     firebase.auth().signInAnonymously()
         .then((userCredential) => {
             playerId = userCredential.user.uid;
@@ -7012,12 +7709,13 @@ function showSaveIndicator(message) {
 function syncProfileWithCloud() {
     if (!cloudSaveEnabled || !playerId || !currentProfileName) return;
     
-    // Check if cloud has newer data
+    // Check if cloud has newer data for current player
     firebase.database().ref('profiles/' + playerId + '/' + currentProfileName).once('value')
         .then((snapshot) => {
             const cloudProfile = snapshot.val();
             
             if (cloudProfile) {
+                // Found data for current player ID
                 const cloudTime = new Date(cloudProfile.lastPlayed || 0).getTime();
                 const localTime = new Date(currentProfile.lastPlayed || 0).getTime();
                 
@@ -7028,11 +7726,12 @@ function syncProfileWithCloud() {
                     showSaveIndicator('☁️ Cloud Synced');
                 } else {
                     debug('💾 Local profile is newer, syncing up...');
-                    saveProfile(); // This will upload to cloud
+                    saveProfile();
                 }
             } else {
-                debug('☁️ No cloud profile found, uploading local...');
-                saveProfile(); // Upload current profile to cloud
+                // No data for current player ID - check for orphaned data from domain change
+                debug('🔍 No data for current player, checking for orphaned saves...');
+                searchForOrphanedSaveData();
             }
         })
         .catch((error) => {
@@ -7040,7 +7739,129 @@ function syncProfileWithCloud() {
         });
 }
 
+// New function to find save data from old domain
+function searchForOrphanedSaveData() {
+    console.log('🔍 Searching for orphaned save data...');
+    
+    // IMPORTANT: Only search for orphaned data if we have local data that suggests
+    // this device previously had progress (to prevent giving random profiles to new users)
+    const hasLocalProgress = checkForLocalProgressIndicators();
+    
+    if (!hasLocalProgress) {
+        console.log('📱 No local progress indicators found - this appears to be a truly new user');
+        return;
+    }
+    
+    console.log('📱 Local progress indicators found - searching for orphaned data...');
+    
+    // Get all profiles to find potential matches
+    firebase.database().ref('profiles').once('value')
+        .then((snapshot) => {
+            const allProfiles = snapshot.val();
+            console.log('📊 Found profiles:', allProfiles ? Object.keys(allProfiles).length : 0);
+            
+            if (!allProfiles) {
+                console.log('❌ No profiles found in database');
+                return;
+            }
+            
+            // Look for profiles that match THIS SPECIFIC device's characteristics
+            Object.keys(allProfiles).forEach(oldPlayerId => {
+                if (oldPlayerId === playerId) return; // Skip current player
+                
+                console.log('🔍 Checking player:', oldPlayerId.substring(0, 8) + '...');
+                
+                const oldPlayerProfiles = allProfiles[oldPlayerId];
+                if (oldPlayerProfiles && oldPlayerProfiles.Default) {
+                    const oldProfile = oldPlayerProfiles.Default;
+                    
+                    console.log('📋 Found profile with coins:', oldProfile.totalCoins || 0);
+                    
+                    // Check if this profile matches THIS device's previous data
+                    if (isThisDevicesOldProfile(oldProfile)) {
+                        console.log('✅ Profile matches THIS device, migrating...');
+                        console.log('💰 Migrating coins:', oldProfile.totalCoins);
+                        
+                        // Migrate the matching profile
+                        currentProfile = validateAndMigrateProfile(oldProfile);
+                        syncProfileToGameState();
+                        saveProfile(currentProfileName, 'domain_migration');
+                        showSaveIndicator('🔄 Data Recovered!');
+                        updateTotalCoins();
+                        
+                        console.log('✅ Migration complete!');
+                        return;
+                    }
+                }
+            });
+        })
+        .catch((error) => {
+            console.error('❌ Orphaned data search failed:', error);
+        });
+}
 
+// Check if this device has any indicators of previous progress
+function checkForLocalProgressIndicators() {
+    // Check for any local storage that suggests this device had progress before
+    const legacyData = localStorage.getItem('endlessRunnerData');
+    const migrationComplete = localStorage.getItem('runningBlitzEndlessRunner_migrationComplete');
+    const anyGameData = localStorage.getItem('runningBlitzEndlessRunner_profile_Default');
+    
+    // Also check browser/device characteristics that might indicate previous use
+    const hasGameHistory = localStorage.length > 5; // Arbitrary threshold
+    
+    return !!(legacyData || anyGameData || (migrationComplete && hasGameHistory));
+}
+
+// More strict matching - only migrate if it's very likely THIS device's data
+function isThisDevicesOldProfile(profile) {
+    if (!profile) return false;
+    
+    // Get current local data if any
+    const localData = localStorage.getItem('runningBlitzEndlessRunner_profile_Default');
+    
+    if (localData) {
+        try {
+            const parsed = JSON.parse(localData);
+            // If local data has progress, only migrate if cloud has MORE progress
+            // This prevents new users from getting old data
+            if (parsed.totalCoins > 0) {
+                return (profile.totalCoins || 0) > parsed.totalCoins;
+            }
+        } catch (e) {
+            // Ignore parsing errors
+        }
+    }
+    
+    // For true orphan detection, require significant progress
+    // AND some device-specific indicators
+    const hasSignificantProgress = (profile.totalCoins || 0) > 100;
+    const hasGameHistory = profile.totalGamesPlayed > 5;
+    
+    // Only migrate if there's substantial progress AND this looks like a returning user
+    return hasSignificantProgress && hasGameHistory && checkForLocalProgressIndicators();
+}
+
+
+function shouldMigrateProfile(profile) {
+    if (!profile) return false;
+    
+    const hasCoins = (profile.totalCoins || 0) > 0;
+    const hasScore = (profile.highScore || 0) > 0;
+    const hasUnlockedChars = profile.unlockedCharacters && 
+        Object.values(profile.unlockedCharacters).some(unlocked => unlocked);
+    
+    console.log('🔍 Migration check:', {
+        coins: profile.totalCoins || 0,
+        score: profile.highScore || 0,
+        hasCoins,
+        hasScore,
+        hasUnlockedChars,
+        shouldMigrate: hasCoins || hasScore || hasUnlockedChars
+    });
+    
+    return hasCoins || hasScore || hasUnlockedChars;
+}
 
 // Initialize save system
 function initializeSaveSystem() {
@@ -7408,6 +8229,8 @@ function syncProfileToGameState() {
     selectedTrack = currentTrack;
 
     debug('Game totalCoins after sync:', totalCoins);
+
+        modModeEnabled = currentProfile.modModeEnabled || false;  // ADD THIS LINE
 
     
     // Sync leaderboard
@@ -8005,7 +8828,7 @@ function showCharacterSelectScreenFromPause() {
             gameState = "gameOver";
         }
 
-        // Show settings screen during gameplay
+// Show settings screen during gameplay
         function toggleSettingsFromGame() {
             // Pause the game
             gamePaused = true;
@@ -8016,6 +8839,72 @@ function showCharacterSelectScreenFromPause() {
             
             // Set game state
             gameState = "playing"; // Remember we're coming from playing state
+        }
+
+        // Show main menu from pause menu
+        function showMainMenuFromPause() {
+            // Hide pause screen
+            document.getElementById('pauseScreen').style.display = 'none';
+            
+            // Stop any background music
+            if (musicPlaying) {
+                try {
+                    musicLayers.forEach(layer => {
+                        if (layer.pattern) {
+                            layer.pattern.stop(0);
+                        }
+                        if (layer.synth) {
+                            layer.synth.volume.rampTo(-60, 0.01);
+                        }
+                    });
+                    Tone.Transport.stop();
+                    Tone.Transport.cancel();
+                    musicPlaying = false;
+                } catch (error) {
+                    debug('Audio stop error (non-critical):', error);
+                }
+            }
+            
+            // Reset game state
+            resetGameForMenu();
+            
+            // Show main menu
+            document.getElementById('mainMenuScreen').style.display = 'flex';
+            gameState = "mainMenu";
+        }
+
+        // Show main menu from game over screen
+        function showMainMenuFromGameOver() {
+            // Hide game over screen
+            document.getElementById('gameOver').style.display = 'none';
+            
+            // Reset game state
+            resetGameForMenu();
+            
+            // Show main menu
+            document.getElementById('mainMenuScreen').style.display = 'flex';
+            gameState = "mainMenu";
+        }
+
+        // Reset game state when returning to menu
+        function resetGameForMenu() {
+            // Reset game flags
+            gameStarted = false;
+            gameOver = false;
+            gamePaused = false;
+            
+            // Reset score and coins display
+            score = 0;
+            updateScore();
+            updateTotalCoins();
+            
+            // Hide game UI elements
+            document.getElementById('score').style.display = 'none';
+            document.getElementById('totalCoins').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('speedIndicator').style.display = 'none';
+            document.getElementById('powerUpStatusBar').style.display = 'none';
+            document.getElementById('swipeInstructions').style.display = 'none';
         }
         
         function moveLeft() {
@@ -8919,6 +9808,42 @@ if (isFallenTree) {
     }
     
     return false;
+}
+
+// Check if this is a rock formation - use lane-based collision
+const isRockFormation = obstacles.includes(object) && object.userData.obstacleType === 'rockFormation';
+
+if (isRockFormation) {
+    // Get player and rock positions
+    const playerPos = new THREE.Vector3();
+    const rockPos = new THREE.Vector3();
+    player.getWorldPosition(playerPos);
+    object.getWorldPosition(rockPos);
+    
+    // First check Z distance - if too far away, no collision
+    const zDistance = Math.abs(playerPos.z - rockPos.z);
+    if (zDistance > 1.5) {
+        return false; // Too far in front/behind
+    }
+    
+    // Check if player and rock are in the same lane
+    const playerLane = Math.round(player.position.x / 2); // Assuming lanes are 2 units apart
+    const rockLane = Math.round(object.position.x / 2);
+    
+    // Only collide if in the same lane
+    if (playerLane !== rockLane) {
+        return false; // Different lanes, no collision
+    }
+    
+    // Check if player can jump over
+    if (jumping && player.position.y > 1.2) {
+        debug('🦘 Jumped over rock formation!');
+        return false;
+    }
+    
+    // If in same lane and close enough, collision detected
+    debug('💥 Hit rock formation!');
+    return true;
 }
 
 
