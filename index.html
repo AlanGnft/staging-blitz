@@ -1378,8 +1378,8 @@ setTimeout(() => {
                 <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">💜 Support the Creator</h3>
                 <p style="color: #ccc; margin: 0 0 15px 0; line-height: 1.4; font-size: 14px;">Thank me on DRiP.haus and discover more creative projects!</p>
                 
-                <!-- DRiP iframe container -->
-                <div id="dripIframeContainer" style="
+<!-- DRiP Channel Preview -->
+                <div id="dripPreviewContainer" style="
                     width: 100%; 
                     height: 400px; 
                     border-radius: 10px; 
@@ -1387,22 +1387,60 @@ setTimeout(() => {
                     border: 1px solid rgba(255, 255, 255, 0.2);
                     background: rgba(0, 0, 0, 0.3);
                     position: relative;
-                ">
-                    <!-- Loading message -->
-                    <div id="dripLoadingMessage" style="
+                    cursor: pointer;
+                    transition: transform 0.2s ease;
+                " onclick="window.open('https://drip.haus/alangnft/home', '_blank')" 
+                onmouseover="this.style.transform='scale(1.02)'" 
+                onmouseout="this.style.transform='scale(1)'">
+                    
+                    <!-- Screenshot Preview -->
+                    <img id="dripScreenshot" src="assets/images/DRiPscreenshot.png" 
+                    alt="DRiP Channel Preview" 
+                    style="
+                        width: 100%; 
+                        height: 100%; 
+                        object-fit: cover;
+                        border-radius: 10px;
+                    " 
+                    onerror="this.style.display='none'; document.getElementById('dripPreviewFallback').style.display='flex';">
+                    
+                    <!-- Fallback content if image fails -->
+                    <div id="dripPreviewFallback" style="
                         position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        color: #ccc;
-                        font-size: 14px;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+                        display: none;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        color: white;
                         text-align: center;
+                        padding: 20px;
+                        box-sizing: border-box;
                     ">
-                        <div style="margin-bottom: 10px;">🔄 Loading DRiP channel...</div>
-                        <div style="font-size: 12px;">If this doesn't load, <a href="https://drip.haus/alangnft/home" target="_blank" style="color: #00a2ff;">visit my DRiP profile</a></div>
+                        <div style="font-size: 48px; margin-bottom: 15px;">🏴‍☠️</div>
+                        <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">DRiPlanet</div>
+                        <div style="font-size: 16px; margin-bottom: 5px;">@alangNFT</div>
+                        <div style="font-size: 14px; opacity: 0.8;">Click to visit profile</div>
                     </div>
                     
-                    <!-- Iframe will be inserted here -->
+                    <!-- Click overlay effect -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(255, 255, 255, 0.1);
+                        opacity: 0;
+                        transition: opacity 0.2s ease;
+                        border-radius: 10px;
+                        pointer-events: none;
+                    " id="dripClickOverlay"></div>
+                    
                 </div>
                 
                 <!-- Direct link fallback -->
@@ -4352,10 +4390,9 @@ function setupShopListeners() {
             const content = document.getElementById(`shop-${tabName}`);
             content.style.display = tabName === 'drip' ? 'block' : 'grid';
             
-            // Initialize DRiP iframe when tab is opened
+            // Add hover effect for DRiP preview
             if (tabName === 'drip') {
-                // Small delay to ensure tab is visible
-                setTimeout(initDripIframe, 100);
+                setupDripPreviewEffects();
             }
         });
     });
@@ -4476,6 +4513,31 @@ function initDripIframe() {
     }
     
     debug('DRiP iframe initialized');
+}
+
+// Setup DRiP preview hover effects
+function setupDripPreviewEffects() {
+    const container = document.getElementById('dripPreviewContainer');
+    const overlay = document.getElementById('dripClickOverlay');
+    
+    if (container && overlay) {
+        container.addEventListener('mouseenter', function() {
+            overlay.style.opacity = '1';
+        });
+        
+        container.addEventListener('mouseleave', function() {
+            overlay.style.opacity = '0';
+        });
+        
+        // Add click feedback
+        container.addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        container.addEventListener('mouseup', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+    }
 }
 
 // Initialize profile screen
