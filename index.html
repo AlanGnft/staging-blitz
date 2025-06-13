@@ -1270,33 +1270,50 @@ setTimeout(() => {
 </div>
 
 <!-- Shop Screen -->
-<div id="shopScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow-y: auto; padding: 20px; box-sizing: border-box;">
-    <div style="background: rgba(0, 20, 40, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px; border-radius: 20px; max-width: 600px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); position: relative;">
-        
+<div id="shopScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow: hidden;">
+    
+    <!-- Shop Header -->
+    <div style="padding: 20px; text-align: center; position: relative;">
         <!-- Back Button -->
-        <button id="backToMainMenuFromShop" style="position: absolute; top: 15px; left: 15px; background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
+        <button id="backToMainMenuFromShop" style="position: absolute; top: 20px; left: 20px; background: #666; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 16px;">← Back</button>
         
         <!-- Shop Title -->
-        <h2 style="color: white; margin: 0 0 30px 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 28px;">🛒 Shop</h2>
+        <h2 style="color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 28px;">🛒 Shop</h2>
         
         <!-- Current Coins Display -->
-        <div style="text-align: center; margin-bottom: 30px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.3);">
-            <h3 style="color: #FFD700; margin: 0; font-size: 24px;">💰 <span id="shopCoinsDisplay">0</span> Coins</h3>
+        <div style="margin-top: 15px; padding: 10px 20px; background: rgba(255, 215, 0, 0.1); border-radius: 10px; border: 1px solid rgba(255, 215, 0, 0.3); display: inline-block;">
+            <span style="color: #FFD700; font-size: 20px; font-weight: bold;">💰 <span id="shopCoinsDisplay">0</span> Coins</span>
+        </div>
+    </div>
+    
+    <!-- Shop Tabs -->
+    <div style="display: flex; justify-content: center; margin: 0 20px 20px 20px;">
+        <button class="shop-tab active" data-tab="characters" style="background: #2196F3; color: white; border: none; padding: 12px 24px; border-radius: 8px 0 0 8px; cursor: pointer; font-size: 16px; border-right: 1px solid #fff;">👤 Characters</button>
+        <button class="shop-tab" data-tab="worlds" style="background: #666; color: white; border: none; padding: 12px 24px; cursor: pointer; font-size: 16px;">🌍 Worlds</button>
+        <button class="shop-tab" data-tab="drip" style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 16px; border-left: 1px solid #fff;">🎁 DRiP</button>
+    </div>
+    
+    <!-- Shop Content Area -->
+    <div style="flex: 1; overflow-y: auto; padding: 0 20px 20px 20px;">
+        
+        <!-- Characters Tab Content -->
+        <div id="shop-characters" class="shop-tab-content active" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; max-height: 100%;">
+            <!-- Will be populated by JavaScript -->
         </div>
         
-        <!-- Characters Section -->
-        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">👤 Characters</h3>
-            <div id="shopCharactersList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                <!-- Will be populated by JavaScript -->
-            </div>
+        <!-- Worlds Tab Content -->
+        <div id="shop-worlds" class="shop-tab-content" style="display: none; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; max-height: 100%;">
+            <!-- Will be populated by JavaScript -->
         </div>
         
-        <!-- Worlds Section -->
-        <div style="margin: 25px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 20px;">🌍 Worlds</h3>
-            <div id="shopWorldsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                <!-- Will be populated by JavaScript -->
+        <!-- DRiP Tab Content -->
+        <div id="shop-drip" class="shop-tab-content" style="display: none; text-align: center; padding: 40px 20px;">
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: 15px; padding: 30px; max-width: 400px; margin: 0 auto;">
+                <h3 style="color: white; margin: 0 0 20px 0; font-size: 24px;">🎁 DRiP Rewards</h3>
+                <p style="color: #ccc; margin: 0 0 20px 0; line-height: 1.5;">Exclusive unlockables coming soon through DRiP.haus! Get rare characters, worlds, and special items.</p>
+                <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 15px; margin: 20px 0;">
+                    <p style="color: #FFD700; margin: 0; font-weight: bold;">🚀 Coming Soon!</p>
+                </div>
             </div>
         </div>
         
@@ -3885,7 +3902,7 @@ function setupMainMenuSettingsListeners() {
     document.getElementById('mainMenuModModeBtn').addEventListener('click', function() {
         const password = document.getElementById('mainMenuModPassword').value;
         
-        if (password === 'unlock123') { // Use your actual mod password
+        if (password === '5050') { // Use your actual mod password
             modModeEnabled = !modModeEnabled;
             saveGameData('mod_toggle');
             
@@ -3935,7 +3952,7 @@ function initShopScreen() {
 
 // Populate shop characters
 function populateShopCharacters() {
-    const charactersList = document.getElementById('shopCharactersList');
+    const charactersList = document.getElementById('shop-characters');
     charactersList.innerHTML = '';
     
     characterNames.forEach(charName => {
@@ -3975,7 +3992,7 @@ function populateShopCharacters() {
 
 // Populate shop worlds
 function populateShopWorlds() {
-    const worldsList = document.getElementById('shopWorldsList');
+    const worldsList = document.getElementById('shop-worlds');
     worldsList.innerHTML = '';
     
     availableWorlds.forEach(world => {
@@ -4015,10 +4032,36 @@ function populateShopWorlds() {
 
 // Setup shop event listeners
 function setupShopListeners() {
+    // Back button
     document.getElementById('backToMainMenuFromShop').addEventListener('click', function() {
         document.getElementById('shopScreen').style.display = 'none';
         document.getElementById('mainMenuScreen').style.display = 'flex';
         gameState = "mainMenu";
+    });
+    
+    // Shop tab switching
+    document.querySelectorAll('.shop-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            document.querySelectorAll('.shop-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.background = '#666';
+            });
+            
+            // Hide all tab content
+            document.querySelectorAll('.shop-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Activate clicked tab
+            this.classList.add('active');
+            this.style.background = '#2196F3';
+            
+            // Show corresponding content
+            const tabName = this.getAttribute('data-tab');
+            const content = document.getElementById(`shop-${tabName}`);
+            content.style.display = tabName === 'drip' ? 'block' : 'grid';
+        });
     });
 }
 
@@ -4109,8 +4152,9 @@ function updateProfileDisplay() {
         nameElement.textContent = 'Anonymous Runner';
     }
     
-    // Update high score
-    document.getElementById('profileHighScore').textContent = highScore;
+    // Update high score (handle if highScore is undefined)
+    const currentHighScore = typeof highScore !== 'undefined' ? highScore : 0;
+    document.getElementById('profileHighScore').textContent = currentHighScore;
     
     // Update total coins
     document.getElementById('profileTotalCoins').textContent = totalCoins;
@@ -4978,6 +5022,21 @@ document.getElementById('nextWorldBtn').addEventListener('click', function() {
             }
         }
     });
+}
+
+// Function to show/hide world navigation arrows
+function updateWorldArrowVisibility() {
+    const unlockedCount = availableWorlds.filter(world => unlockedWorlds[world.id] || modModeEnabled).length;
+    const prevBtn = document.getElementById('prevWorldBtn');
+    const nextBtn = document.getElementById('nextWorldBtn');
+    
+    if (unlockedCount <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
 }
 
 // Update world display information
