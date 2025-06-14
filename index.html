@@ -3390,9 +3390,31 @@ function updateLeaderboardDisplay() {
     
     currentLeaderboard.forEach((entry, index) => {
         const row = document.createElement('tr');
+        
+        // Get avatar for this entry (use current player's avatar if it's their score)
+        let avatarHtml = '🏃'; // Default emoji
+        if (entry.name === (currentProfile.username || 'Anonymous')) {
+            // This is the current player's score - use their avatar
+            if (currentProfile.avatarType === 'image' && currentProfile.avatarData) {
+                avatarHtml = `<img src="${currentProfile.avatarData}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; vertical-align: middle;">`;
+            } else {
+                avatarHtml = currentProfile.avatarData || '🏃';
+            }
+        } else if (entry.avatar) {
+            // Entry has stored avatar data
+            if (entry.avatarType === 'image' && entry.avatar) {
+                avatarHtml = `<img src="${entry.avatar}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; vertical-align: middle;">`;
+            } else {
+                avatarHtml = entry.avatar || '🏃';
+            }
+        }
+        
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${entry.name}</td>
+            <td style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">${avatarHtml}</span>
+                <span>${entry.name}</span>
+            </td>
             <td>${entry.score}</td>
             <td>${entry.character || 'Unknown'}</td>
         `;
@@ -3422,12 +3444,14 @@ function formatDate(dateString) {
     // Get existing leaderboard
     let leaderboard = JSON.parse(localStorage.getItem('runningBlitzLeaderboard') || '[]');
     
-    // Add new score
+// Add new score with avatar data
     leaderboard.push({
         name: playerName,
         score: currentScore,
         character: currentCharacter,
-        date: new Date().toLocaleDateString()
+        date: new Date().toLocaleDateString(),
+        avatar: currentProfile.avatarData || '🏃',
+        avatarType: currentProfile.avatarType || 'emoji'
     });
     
     // Sort by score (highest first)
@@ -3474,7 +3498,9 @@ function submitToGlobalLeaderboard(playerName, score, character) {
         character: character,
         timestamp: Date.now(),
         date: new Date().toLocaleDateString(),
-        country: 'Unknown' // We'll add geolocation later
+        country: 'Unknown', // We'll add geolocation later
+        avatar: currentProfile.avatarData || '🏃',
+        avatarType: currentProfile.avatarType || 'emoji'
     };
     
     // Submit to Firebase global leaderboard
@@ -3603,6 +3629,16 @@ function showGlobalLeaderboard() {
                 const bgColor = isCurrentPlayer ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)';
                 const textColor = isCurrentPlayer ? '#00FF00' : 'white';
                 
+// Get avatar for this entry
+                let avatarHtml = '🏃'; // Default emoji
+                if (entry.avatar) {
+                    if (entry.avatarType === 'image' && entry.avatar) {
+                        avatarHtml = `<img src="${entry.avatar}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;">`;
+                    } else {
+                        avatarHtml = `<span style="font-size: 20px; margin-right: 8px;">${entry.avatar || '🏃'}</span>`;
+                    }
+                }
+
                 leaderboardHTML += `
                     <div style="
                         background: ${bgColor};
@@ -3614,9 +3650,10 @@ function showGlobalLeaderboard() {
                         justify-content: space-between;
                         align-items: center;
                     ">
-                        <span style="color: ${textColor}; font-weight: bold;">
-                            ${rankEmoji} #${rank} ${entry.playerName || 'Anonymous'}
-                        </span>
+                        <div style="display: flex; align-items: center; color: ${textColor}; font-weight: bold;">
+                            ${avatarHtml}
+                            <span>${rankEmoji} #${rank} ${entry.playerName || 'Anonymous'}</span>
+                        </div>
                         <div style="text-align: right;">
                             <div style="color: ${textColor}; font-size: 18px; font-weight: bold;">
                                 ${entry.score.toLocaleString()}
@@ -8903,10 +8940,23 @@ function updateGlobalLeaderboardDisplay() {
             
             const rowStyle = isCurrentPlayer ? 'background: rgba(0, 255, 0, 0.1); color: #00FF00;' : '';
             
+            // Get avatar for this entry
+            let avatarHtml = '🏃'; // Default emoji
+            if (entry.avatar) {
+                if (entry.avatarType === 'image' && entry.avatar) {
+                    avatarHtml = `<img src="${entry.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle;">`;
+                } else {
+                    avatarHtml = entry.avatar || '🏃';
+                }
+            }
+
             tbody.innerHTML += `
                 <tr style="${rowStyle}">
                     <td>${rankDisplay}</td>
-                    <td>${entry.playerName || 'Anonymous'}</td>
+                    <td style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 16px;">${avatarHtml}</span>
+                        <span>${entry.playerName || 'Anonymous'}</span>
+                    </td>
                     <td>${entry.score.toLocaleString()}</td>
                     <td>${entry.character}</td>
                 </tr>
