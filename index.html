@@ -11575,12 +11575,25 @@ function checkHighScore(currentScore) {
     // It's a high score if leaderboard has less than 10 entries OR current score beats the lowest score
     const isHighScore = leaderboard.length < 10 || currentScore > (leaderboard[leaderboard.length - 1]?.score || 0);
 
+    // Debug the high score update
+    debug('🏆 High score check:', {
+        currentScore: currentScore,
+        profileHighScore: currentProfile.highScore || 0,
+        willUpdate: currentScore > (currentProfile.highScore || 0)
+    });
+
     // Update profile high score regardless of leaderboard position
-    if (score > (currentProfile.highScore || 0)) {
-        currentProfile.highScore = score;
+    if (currentScore > (currentProfile.highScore || 0)) {
+        currentProfile.highScore = currentScore;
         currentProfile.lastPlayed = new Date().toISOString();
         saveGameData('high_score');
+
+        debug('🏆 Profile high score updated!', {
+            oldScore: oldHighScore,
+            newScore: currentScore
+        });
     }
+    
     
     debug(`Checking high score: ${currentScore}, is high score: ${isHighScore}`);
     debug(`Need to beat: ${leaderboard[leaderboard.length - 1]?.score || 0}`);
