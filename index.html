@@ -1274,8 +1274,9 @@ setTimeout(() => {
     
     <!-- Settings Tabs -->
     <div style="display: flex; justify-content: center; margin: 0 20px 15px 20px; flex-shrink: 0;">
-        <button class="settings-tab active" data-tab="general" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 8px 0 0 8px; cursor: pointer; font-size: 14px; border-right: 1px solid #fff; flex: 1; max-width: 150px;">🔊 General</button>
-        <button class="settings-tab" data-tab="mods" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 14px; border-left: 1px solid #fff; flex: 1; max-width: 150px;">🔧 Mods</button>
+        <button class="settings-tab active" data-tab="general" style="background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 8px 0 0 8px; cursor: pointer; font-size: 13px; border-right: 1px solid #fff; flex: 1; max-width: 120px;">🔊 General</button>
+        <button class="settings-tab" data-tab="leaderboard" style="background: #666; color: white; border: none; padding: 10px 15px; cursor: pointer; font-size: 13px; border-right: 1px solid #fff; flex: 1; max-width: 120px;">🏆 Global</button>
+        <button class="settings-tab" data-tab="mods" style="background: #666; color: white; border: none; padding: 10px 15px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 13px; border-left: 1px solid #fff; flex: 1; max-width: 120px;">🔧 Mods</button>
     </div>
     
         <!-- Settings Content Area -->
@@ -1311,6 +1312,45 @@ setTimeout(() => {
                     <button id="generateSaveCodeBtn" style="background: #34C759; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; flex: 1; min-width: 90px;">📱 Get Code</button>
                     <button id="restoreSaveCodeBtn" style="background: #FF9500; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; flex: 1; min-width: 90px;">📥 Use Code</button>
                     <button id="googleAuthBtn" style="background: #4285f4; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; flex: 1; min-width: 90px;">🔗 Google</button>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Global Leaderboard Tab Content -->
+        <div id="settings-leaderboard" class="settings-tab-content" style="display: none;">
+            
+            <!-- Global Leaderboard Section -->
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h3 style="color: white; margin: 0 0 15px 0; font-size: 18px; text-align: center;">🌍 Global Leaderboard</h3>
+                
+                <!-- Player's Global Rank Display -->
+                <div id="settingsPlayerRank" style="text-align: center; margin-bottom: 15px; padding: 12px; background: rgba(255, 215, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.3);">
+                    <p style="color: #FFD700; margin: 0; font-size: 14px;" id="settingsGlobalRankText">🏆 Loading your rank...</p>
+                </div>
+                
+                <!-- Global Leaderboard Table -->
+                <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; background: rgba(0, 0, 0, 0.2);">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: rgba(255, 255, 255, 0.1); position: sticky; top: 0;">
+                            <tr>
+                                <th style="padding: 10px 8px; text-align: left; color: white; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Rank</th>
+                                <th style="padding: 10px 8px; text-align: left; color: white; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Player</th>
+                                <th style="padding: 10px 8px; text-align: right; color: white; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Score</th>
+                                <th style="padding: 10px 8px; text-align: center; color: white; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Character</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settingsGlobalLeaderboardBody">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Refresh Button -->
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="refreshSettingsGlobalLeaderboard()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: background 0.2s ease;" onmouseover="this.style.background='#45a049'" onmouseout="this.style.background='#4CAF50'">
+                        🔄 Refresh Leaderboard
+                    </button>
                 </div>
             </div>
             
@@ -3907,6 +3947,117 @@ function updateGlobalLeaderboardAvatar() {
             console.error('❌ Failed to check existing global leaderboard entries:', error);
         });
 }
+
+// Update global leaderboard in settings tab
+function updateSettingsGlobalLeaderboard() {
+    const tbody = document.getElementById('settingsGlobalLeaderboardBody');
+    const rankDisplay = document.getElementById('settingsGlobalRankText');
+    
+    if (!tbody) return;
+    
+    // Clear existing content
+    tbody.innerHTML = '';
+    
+    if (globalLeaderboard.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px; color: white;">
+                    🏆 Be the first on the global leaderboard!<br>
+                    <small style="color: #ccc;">Complete a game to see your score here!</small>
+                </td>
+            </tr>
+        `;
+        if (rankDisplay) {
+            rankDisplay.textContent = "🌍 No global scores yet - be the first!";
+        }
+        return;
+    }
+    
+    // Add top 15 scores
+    globalLeaderboard.slice(0, 15).forEach((entry, index) => {
+        const rank = index + 1;
+        const isCurrentPlayer = entry.playerId === playerId;
+        
+        let rankDisplay = `#${rank}`;
+        if (rank === 1) rankDisplay = '🥇';
+        else if (rank === 2) rankDisplay = '🥈';
+        else if (rank === 3) rankDisplay = '🥉';
+        
+        const rowStyle = isCurrentPlayer ? 'background: rgba(0, 255, 0, 0.1);' : '';
+        const textColor = isCurrentPlayer ? '#00FF00' : 'white';
+        
+        // Get avatar for this entry
+        let avatarHtml = '🏃'; // Default emoji
+        if (entry.avatar) {
+            if (entry.avatarType === 'image' && entry.avatar) {
+                avatarHtml = `<img src="${entry.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 6px;">`;
+            } else {
+                avatarHtml = `<span style="font-size: 16px; margin-right: 6px;">${entry.avatar || '🏃'}</span>`;
+            }
+        }
+        
+        tbody.innerHTML += `
+            <tr style="${rowStyle}">
+                <td style="padding: 8px; color: ${textColor}; font-size: 14px;">${rankDisplay}</td>
+                <td style="padding: 8px; color: ${textColor}; font-size: 14px;">
+                    ${avatarHtml}<span>${entry.playerName || 'Anonymous'}</span>
+                </td>
+                <td style="padding: 8px; text-align: right; color: ${textColor}; font-size: 14px; font-weight: bold;">${entry.score.toLocaleString()}</td>
+                <td style="padding: 8px; text-align: center; color: ${textColor}; font-size: 12px;">${entry.character}</td>
+            </tr>
+        `;
+    });
+    
+    // Update player rank display
+    if (playerGlobalRank && rankDisplay) {
+        rankDisplay.textContent = `🏆 Your Global Rank: #${playerGlobalRank} out of ${globalLeaderboard.length} players`;
+    } else if (rankDisplay) {
+        rankDisplay.textContent = `🌍 ${globalLeaderboard.length} players competing worldwide`;
+    }
+}
+
+// Refresh global leaderboard in settings
+function refreshSettingsGlobalLeaderboard() {
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '🔄 Loading...';
+    button.disabled = true;
+    
+    loadGlobalLeaderboard();
+    
+    setTimeout(() => {
+        updateSettingsGlobalLeaderboard();
+        button.textContent = originalText;
+        button.disabled = false;
+    }, 1500);
+}
+
+// Initialize settings global leaderboard when tab is opened
+function initSettingsGlobalLeaderboard() {
+    if (cloudSaveEnabled) {
+        loadGlobalLeaderboard();
+        setTimeout(updateSettingsGlobalLeaderboard, 1000);
+    } else {
+        const tbody = document.getElementById('settingsGlobalLeaderboardBody');
+        const rankDisplay = document.getElementById('settingsGlobalRankText');
+        
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 30px; color: #ccc;">
+                        ☁️ Cloud save required for global leaderboard<br>
+                        <small>Sign in with Google to compete globally!</small>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        if (rankDisplay) {
+            rankDisplay.textContent = "☁️ Sign in to see your global rank";
+        }
+    }
+}
         
 
         
@@ -4322,6 +4473,11 @@ function setupMainMenuSettingsListeners() {
             // Show corresponding content
             const tabName = this.getAttribute('data-tab');
             document.getElementById(`settings-${tabName}`).style.display = 'block';
+            
+            // Initialize global leaderboard when tab is opened
+            if (tabName === 'leaderboard') {
+                initSettingsGlobalLeaderboard();
+            }
         });
     });
     
