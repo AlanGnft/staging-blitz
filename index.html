@@ -1705,7 +1705,39 @@ setTimeout(() => {
     </div>
 </div>
     
-    
+    <div class="settings-section">
+        <h3>Mod Options</h3>
+        <div class="mod-option" id="mod-mode-option">
+            <div class="mod-info">
+                <h4>Mod Mode</h4>
+                <p>Unlock all content</p>
+            <input type="password" class="mod-password" id="modPassword" placeholder="Enter password">
+        </div>
+        <button class="mod-action" id="modModeButton">Enable</button>
+    </div>
+    <div class="mod-option" id="difficulty-override-option" style="display: none;">
+        <div class="mod-info">
+            <h4>Force Difficulty Level</h4>
+            <p>Override speed level for testing</p>
+            <select id="difficultyOverride" style="padding: 5px; margin: 5px 0; border-radius: 3px; border: none;">
+                <option value="-1">Normal (Time-Based)</option>
+                <option value="0">Level 1 - Cruise</option>
+                <option value="1">Level 2 - Accelerating</option>
+                <option value="2">Level 3 - Intense</option>
+                <option value="3">Level 4 - Blazing</option>
+                <option value="4">Level 5 - Maximum Chaos</option>
+            </select>
+        </div>
+        <button class="mod-action" id="applyDifficultyButton">Apply</button>
+    </div>
+    <div class="mod-option" id="reset-data-option">
+        <div class="mod-info">
+            <h4>Reset Game Data</h4>
+            <p>Clear all saved progress</p>
+        </div>
+        <button class="mod-action" id="resetDataButton">Reset</button>
+    </div>
+</div>
         </div>
         
        
@@ -2900,7 +2932,10 @@ loadWorldScenery(currentWorld).then(() => {
             document.getElementById('pauseSettingsBtn').onclick = toggleSettingsFromPause;
             document.getElementById('pauseBtn').onclick = togglePause;
             document.getElementById('closeSettingsButton').onclick = closeSettingsScreen;
+            document.getElementById('modModeButton').onclick = toggleModMode;
+            document.getElementById('resetDataButton').onclick = resetGameData;
             document.getElementById('saveScoreButton').onclick = saveHighScore;
+            document.getElementById('applyDifficultyButton').onclick = applyDifficultyOverride;
 
 document.getElementById('soundEffectsCheckbox').addEventListener('change', function() {
     soundEffectsEnabled = this.checked;
@@ -2942,7 +2977,26 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
     // Initialize jukebox
     initializeJukebox();
 
-    
+    // Update mod mode UI based on CURRENT state
+    if (modModeEnabled) {
+        document.getElementById('mod-mode-option').classList.add('enabled');
+        document.getElementById('modModeButton').textContent = 'Disable';
+        
+        // Show difficulty override option since mod mode is active
+        const difficultyOption = document.getElementById('difficulty-override-option');
+        if (difficultyOption) {
+            difficultyOption.style.display = 'flex';
+        }
+    } else {
+        document.getElementById('mod-mode-option').classList.remove('enabled');
+        document.getElementById('modModeButton').textContent = 'Enable';
+        
+        // Hide difficulty override option since mod mode is inactive
+        const difficultyOption = document.getElementById('difficulty-override-option');
+        if (difficultyOption) {
+            difficultyOption.style.display = 'none';
+        }
+    }
 }
 
         // Initialize jukebox system
@@ -6720,6 +6774,14 @@ beetleGroup.add(head);
                 // Update character display in settings
                 updateCharactersInSettings();
                 
+                // Update mod mode display
+                if (modModeEnabled) {
+                    document.getElementById('mod-mode-option').classList.add('enabled');
+                    document.getElementById('modModeButton').textContent = 'Disable';
+                } else {
+                    document.getElementById('mod-mode-option').classList.remove('enabled');
+                    document.getElementById('modModeButton').textContent = 'Enable';
+                }
                 
                 // Update leaderboard
                 updateLeaderboardDisplay();
@@ -6760,7 +6822,103 @@ beetleGroup.add(head);
             }
         }
         
+        // Toggle mod mode on/off
+        function toggleModMode() {
+            const password = document.getElementById('modPassword').value;
+            
+            if (!modModeEnabled) {
+    // Trying to enable mod mode
+    if (password === MOD_PASSWORD) {
+        modModeEnabled = true;
+        document.getElementById('mod-mode-option').classList.add('enabled');
+        document.getElementById('modModeButton').textContent = 'Disable';
         
+        // Show difficulty override option
+        document.getElementById('difficulty-override-option').style.display = 'flex';
+        
+        // Unlock all characters
+        unlockedCharacters.apple = true;
+        unlockedCharacters.carrot = true;
+        unlockedCharacters.pumpkin = true;
+        unlockedCharacters.happyface = true;
+        unlockedCharacters.monster = true;
+        unlockedCharacters.atom = true;
+        unlockedCharacters.slime = true;
+        unlockedCharacters.ufo = true;
+
+        // Unlock all worlds
+availableWorlds.forEach(world => {
+    unlockedWorlds[world.id] = true;
+});
+        
+        // Update UI
+        updateCharactersInSettings();
+        
+        alert('Mod Mode enabled! All characters unlocked + Difficulty Override available.');
+    } else {
+        alert('Incorrect password!');
+    }
+} else {
+    // Disabling mod mode
+    modModeEnabled = false;
+    document.getElementById('mod-mode-option').classList.remove('enabled');
+    document.getElementById('modModeButton').textContent = 'Enable';
+    document.getElementById('modPassword').value = '';
+    
+    // Hide difficulty override option
+    document.getElementById('difficulty-override-option').style.display = 'none';
+    difficultyOverride = -1; // Reset to normal
+    
+    // PROPERLY reload the original saved state
+    const saveKey = `${GAME_ID}_profile_${currentProfileName}`;
+    const savedData = localStorage.getItem(saveKey);
+    
+    if (savedData) {
+        try {
+            const savedProfile = JSON.parse(savedData);
+            // Restore ONLY the unlock states from saved data (don't touch coins/character)
+            unlockedCharacters = {...savedProfile.unlockedCharacters};
+            unlockedWorlds = savedProfile.unlockedWorlds || {classic: true};
+            
+            // Update the current profile to match
+            currentProfile.unlockedCharacters = {...unlockedCharacters};
+            currentProfile.unlockedWorlds = {...unlockedWorlds};
+            currentProfile.modModeEnabled = false;
+            
+            console.log('🔄 Restored unlock states from saved data');
+            console.log('Characters:', unlockedCharacters);
+            console.log('Worlds:', unlockedWorlds);
+        } catch (error) {
+            console.error('Failed to reload saved state:', error);
+            // Fallback to defaults
+            unlockedCharacters = {
+                apple: true,
+                carrot: false,
+                pumpkin: false,
+                happyface: false,
+                monster: false,
+                atom: false,
+                slime: false,
+                ufo: false,
+                robot: false,
+                dragon: false,
+                ghost: false
+            };
+            unlockedWorlds = {classic: true};
+        }
+    }
+    
+    // Save the updated state
+    saveGameData('settings_change');
+    
+    alert('Mod Mode disabled.');
+}
+            
+            saveGameData('settings_change');
+
+
+
+        }
 
 // Apply difficulty override for testing
 function applyDifficultyOverride() {
@@ -6845,6 +7003,9 @@ currentCharacter = 'apple';
 currentWorld = 'classic';
                 
                 // Update UI
+                document.getElementById('mod-mode-option').classList.remove('enabled');
+                document.getElementById('modModeButton').textContent = 'Enable';
+                document.getElementById('modPassword').value = '';
                 updateTotalCoins();
                 updateCharactersInSettings();
                 
