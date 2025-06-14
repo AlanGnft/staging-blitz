@@ -11584,21 +11584,22 @@ function checkHighScore(currentScore) {
 
     // Update profile high score regardless of leaderboard position
     if (currentScore > (currentProfile.highScore || 0)) {
+        const oldScore = currentProfile.highScore || 0; // Fixed: declare oldScore properly
         currentProfile.highScore = currentScore;
         currentProfile.lastPlayed = new Date().toISOString();
         saveGameData('high_score');
-
+        
         debug('🏆 Profile high score updated!', {
-            oldScore: oldHighScore,
+            oldScore: oldScore, // Fixed: use oldScore instead of oldHighScore
             newScore: currentScore
         });
     }
-    
     
     debug(`Checking high score: ${currentScore}, is high score: ${isHighScore}`);
     debug(`Need to beat: ${leaderboard[leaderboard.length - 1]?.score || 0}`);
     return isHighScore;
 }
+
 
         // ==================== CHARACTER ABILITIES ====================
 // Special character powers, abilities, and unique mechanics
