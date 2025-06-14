@@ -1260,8 +1260,11 @@ setTimeout(() => {
 <!-- Main Menu Settings Screen -->
 <div id="mainMenuSettingsScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow: hidden;">
     
-    <!-- Settings Header -->
-    <div style="padding: 15px 20px; text-align: center; position: relative; flex-shrink: 0;">
+    <!-- Settings Container - Centered with max width -->
+    <div style="max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; height: 100%;">
+    
+        <!-- Settings Header -->
+        <div style="padding: 15px 20px; text-align: center; position: relative; flex-shrink: 0;">
         <!-- Back Button -->
         <button id="backToMainMenuFromSettings" style="position: absolute; top: 15px; left: 15px; background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
         
@@ -1275,8 +1278,8 @@ setTimeout(() => {
         <button class="settings-tab" data-tab="mods" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 14px; border-left: 1px solid #fff; flex: 1; max-width: 150px;">🔧 Mods</button>
     </div>
     
-    <!-- Settings Content Area -->
-    <div style="flex: 1; overflow-y: auto; padding: 0 20px 20px 20px;">
+        <!-- Settings Content Area -->
+        <div style="flex: 1; overflow-y: auto; padding: 0 20px 20px 20px;">
         
         <!-- General Tab Content -->
         <div id="settings-general" class="settings-tab-content active">
@@ -1338,8 +1341,9 @@ setTimeout(() => {
             
         </div>
         
-    </div>
-</div>
+        </div> <!-- End settings content area -->
+    </div> <!-- End centered container -->
+</div> <!-- End settings screen -->
 
 <!-- Shop Screen -->
 <div id="shopScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 400; background: linear-gradient(to bottom, #000428, #004e92); overflow: hidden;">
