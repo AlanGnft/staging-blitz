@@ -1628,7 +1628,7 @@ setTimeout(() => {
     <span id="coinsCollected" style="font-size: 20px; margin-bottom: 15px; display: inline-block;"></span><br>
     <div id="newHighScoreMessage" style="display: none; color: gold; margin: 10px 0;">
         <div style="margin-bottom: 10px; font-size: 22px;">New High Score!</div>
-        <input type="text" id="playerNameInput" placeholder="Enter your name" maxlength="15">
+        <div id="highScorePlayerDisplay" style="margin-bottom: 10px; font-size: 16px; color: white;">Playing as: Loading...</div>
         <button id="saveScoreButton">Save Score</button>
     </div>
     <div class="game-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto;">
@@ -3408,8 +3408,16 @@ function formatDate(dateString) {
 
         
         function saveHighScore() {
-    const playerName = document.getElementById('playerNameInput').value.trim() || 'Anonymous';
+    // Use profile username instead of manual input
+    const playerName = currentProfile.username || 'Anonymous';
     const currentScore = score;
+    
+    // Remove the name input requirement
+    const nameInput = document.getElementById('playerNameInput');
+    const saveButton = document.getElementById('saveScoreButton');
+    
+    if (nameInput) nameInput.style.display = 'none';
+    if (saveButton) saveButton.textContent = 'Saving...';
     
     // Get existing leaderboard
     let leaderboard = JSON.parse(localStorage.getItem('runningBlitzLeaderboard') || '[]');
@@ -3434,27 +3442,19 @@ function formatDate(dateString) {
     // Hide name entry section
     document.getElementById('newHighScoreMessage').style.display = 'none';
     
-    // Clear the input for next time
-    document.getElementById('playerNameInput').value = '';
-    
+    debug('💾 Saving high score for:', playerName);
     debug('Score saved to leaderboard!', leaderboard);
 
-    // ADD THIS LINE - Submit to global leaderboard
+    // Submit to global leaderboard
     submitToGlobalLeaderboard(playerName, currentScore, currentCharacter);
     
     // Save profile with high score reason - THIS WILL SHOW THE SAVE INDICATOR
     saveGameData('high_score');
     
-    // Optional: Show confirmation
+    // Show confirmation with username
     alert(`Score saved! ${playerName}: ${currentScore} points`);
 }
 
-// Allow Enter key to save score
-document.getElementById('playerNameInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('saveScoreButton').click();
-    }
-});
 
 // ===== GLOBAL LEADERBOARD SYSTEM =====
 let globalLeaderboard = [];
@@ -8445,6 +8445,9 @@ function initializeSaveSystem() {
     // Load or create default profile
     loadProfile("Default");
     
+    // Initialize profile with username/avatar - ADD THIS LINE
+    initializeProfile();
+    
     // Initialize cloud save after profile is loaded
     setTimeout(() => {
         initializeCloudSave();
@@ -8459,6 +8462,8 @@ function initializeSaveSystem() {
     
     debug('✅ Save system initialized successfully!');
 }
+
+
 
 // Migrate old save data to new profile system
 function migrateLegacySaveData() {
@@ -8837,6 +8842,15 @@ function syncProfileToGameState() {
         }
     }
     
+// Sync profile data
+    if (currentProfile.username) {
+        // Update any displayed username elements
+        const profileNameElem = document.getElementById('profilePlayerName');
+        if (profileNameElem) {
+            profileNameElem.textContent = currentProfile.username;
+        }
+    }
+
     // Update UI elements
     updateTotalCoins();
     updateLeaderboardDisplay();
@@ -9030,6 +9044,28 @@ function generateDefaultUsername() {
     const noun = nouns[Math.floor(Math.random() * nouns.length)];
     const number = Math.floor(Math.random() * 1000);
     return `${adj}${noun}${number}`;
+}
+
+// Initialize profile with username/avatar if missing
+function initializeProfile() {
+    if (!currentProfile) {
+        currentProfile = {};
+    }
+    
+    // Generate username if missing
+    if (!currentProfile.username) {
+        currentProfile.username = generateDefaultUsername();
+        debug('🎮 Generated username:', currentProfile.username);
+    }
+    
+    // Set default avatar if missing
+    if (!currentProfile.avatarType) {
+        currentProfile.avatarType = 'emoji';
+        currentProfile.avatarData = '🏃';
+    }
+    
+    // Save the updated profile
+    saveGameData('profile_init');
 }
 
 // Trigger avatar upload
@@ -10882,6 +10918,14 @@ function endGame() {
 
         if (isHighScore) {
             debug('🏆 Showing name entry form');
+            
+            // Update the username display
+            const playerName = currentProfile.username || 'Anonymous';
+            const playerDisplay = document.getElementById('highScorePlayerDisplay');
+            if (playerDisplay) {
+                playerDisplay.textContent = `Playing as: ${playerName}`;
+            }
+            
             document.getElementById('newHighScoreMessage').style.display = 'block';
         } else {
             debug('🏆 Not a high score - hiding name entry');
