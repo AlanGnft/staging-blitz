@@ -1504,13 +1504,41 @@ setTimeout(() => {
     <!-- Profile Content -->
     <div style="flex: 1; overflow-y: auto; padding: 0 20px 20px 20px; display: flex; flex-direction: column; align-items: center;">
         
-        <!-- Profile Info -->
+<!-- Profile Info -->
         <div style="text-align: center; margin-bottom: 20px;">
-            <div style="width: 80px; height: 80px; background: linear-gradient(45deg, #4CAF50, #2196F3); border-radius: 50%; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 36px;">
-                🏃
+            <!-- Avatar with upload functionality -->
+            <div style="position: relative; display: inline-block; margin-bottom: 12px;">
+                <div id="profileAvatar" style="width: 80px; height: 80px; background: linear-gradient(45deg, #4CAF50, #2196F3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; cursor: pointer; transition: transform 0.2s ease; overflow: hidden; border: 3px solid rgba(255, 255, 255, 0.2);" onclick="triggerAvatarUpload()">
+                    <span id="avatarEmoji">🏃</span>
+                    <img id="avatarImage" style="width: 100%; height: 100%; object-fit: cover; display: none;" alt="Profile Avatar">
+                </div>
+                <!-- Upload overlay -->
+                <div style="position: absolute; bottom: -5px; right: -5px; width: 24px; height: 24px; background: #4CAF50; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 2px solid white;" onclick="triggerAvatarUpload()">
+                    📷
+                </div>
+                <!-- Hidden file input -->
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
             </div>
-            <h3 style="color: white; margin: 0 0 5px 0; font-size: 20px;" id="profilePlayerName">Anonymous Runner</h3>
+            
+            <!-- Username with edit functionality -->
+            <div style="margin-bottom: 5px;">
+                <h3 id="profilePlayerName" style="color: white; margin: 0; font-size: 20px; cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: background 0.2s ease; display: inline-block;" onclick="editUsername()">Anonymous Runner</h3>
+                <button style="background: none; border: none; color: #00a2ff; font-size: 14px; cursor: pointer; margin-left: 8px;" onclick="editUsername()">✏️</button>
+            </div>
             <p style="color: #ccc; margin: 0; font-size: 14px;">Dash Blitz Player</p>
+            
+            <!-- Username edit modal (hidden by default) -->
+            <div id="usernameEditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 6000; justify-content: center; align-items: center;">
+                <div style="background: rgba(0, 20, 40, 0.95); padding: 25px; border-radius: 15px; max-width: 400px; width: 90%; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <h3 style="color: white; margin: 0 0 15px 0;">Edit Username</h3>
+                    <input type="text" id="usernameInput" placeholder="Enter username" maxlength="20" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin-bottom: 15px; box-sizing: border-box;">
+                    <div style="color: #ccc; font-size: 12px; margin-bottom: 15px;">Username will appear on leaderboards</div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="saveUsername()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Save</button>
+                        <button onclick="closeUsernameModal()" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Stats Grid -->
@@ -4574,18 +4602,15 @@ function initProfileScreen() {
 
 // Update profile display
 function updateProfileDisplay() {
-    // Update player name (from Google auth or default)
+    // Initialize profile data if missing
+    initializeProfileData();
+    
+    // Update player name with custom username
     const nameElement = document.getElementById('profilePlayerName');
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-        const currentUser = firebase.auth().currentUser;
-        if (currentUser && !currentUser.isAnonymous && currentUser.displayName) {
-            nameElement.textContent = currentUser.displayName;
-        } else {
-            nameElement.textContent = 'Anonymous Runner';
-        }
-    } else {
-        nameElement.textContent = 'Anonymous Runner';
-    }
+    nameElement.textContent = currentProfile.username || 'Anonymous Runner';
+    
+    // Update avatar
+    setAvatarImage(currentProfile.avatarData || '🏃');
     
     // Update high score (handle if highScore is undefined)
     const currentHighScore = typeof highScore !== 'undefined' ? highScore : 0;
@@ -7879,6 +7904,30 @@ function smartMergeProfiles(localProfile, cloudProfile) {
         source: primaryProfile === localProfile ? 'local' : 'cloud'
     });
     
+    // Handle username - keep the most recent non-default one
+    if (cloudProfile.username && !cloudProfile.username.startsWith('Swift') && 
+        !cloudProfile.username.startsWith('Bold') && cloudProfile.username.length > 0) {
+        merged.username = cloudProfile.username;
+    } else if (localProfile.username && !localProfile.username.startsWith('Swift') && 
+               !localProfile.username.startsWith('Bold')) {
+        merged.username = localProfile.username;
+    } else {
+        merged.username = cloudProfile.username || localProfile.username || generateDefaultUsername();
+    }
+    
+    // Handle avatar - prefer custom uploaded images over emojis
+    if (cloudProfile.avatarType === 'image' && cloudProfile.avatarData) {
+        merged.avatarType = cloudProfile.avatarType;
+        merged.avatarData = cloudProfile.avatarData;
+    } else if (localProfile.avatarType === 'image' && localProfile.avatarData) {
+        merged.avatarType = localProfile.avatarType;
+        merged.avatarData = localProfile.avatarData;
+    } else {
+        // Keep whichever has the most recent avatar data
+        merged.avatarType = cloudProfile.avatarType || localProfile.avatarType || 'emoji';
+        merged.avatarData = cloudProfile.avatarData || localProfile.avatarData || '🏃';
+    }
+    
     return merged;
 }
 
@@ -8134,6 +8183,11 @@ unlockedWorlds: {
     backgroundMusicEnabled: true,
     currentTrack: 'ambient',
     modModeEnabled: false,
+    
+    // Profile customization
+    username: null, // Will be auto-generated if null
+    avatarType: 'emoji', // 'emoji' or 'image'
+    avatarData: '🏃', // emoji character or base64 image data
     
     // Leaderboard (moved into profile)
     personalBests: [],
@@ -8685,6 +8739,11 @@ if (profile.unlockedWorlds) {
         });
     }
     
+    // Migrate profile customization
+    migratedProfile.username = profile.username || null; // Will be generated later if null
+    migratedProfile.avatarType = profile.avatarType || 'emoji';
+    migratedProfile.avatarData = profile.avatarData || '🏃';
+    
     // Migrate custom data for future compatibility
     if (profile.customData) {
         migratedProfile.customData = profile.customData;
@@ -8714,6 +8773,16 @@ function syncGameStateToProfile() {
     currentProfile.backgroundMusicEnabled = backgroundMusicEnabled;
     currentProfile.modModeEnabled = modModeEnabled;
     currentProfile.currentTrack = currentTrack;
+    
+    // Sync profile customization (these are managed by the profile screen)
+    // Don't overwrite with undefined values
+    if (!currentProfile.username) {
+        currentProfile.username = generateDefaultUsername();
+    }
+    if (!currentProfile.avatarType) {
+        currentProfile.avatarType = 'emoji';
+        currentProfile.avatarData = '🏃';
+    }
 
     debug('Current totalCoins in profile after sync:', currentProfile.totalCoins);
 
@@ -8745,10 +8814,19 @@ function syncProfileToGameState() {
     modModeEnabled = currentProfile.modModeEnabled || false;
     currentTrack = currentProfile.currentTrack || 'ambient';
     selectedTrack = currentTrack;
+    modModeEnabled = currentProfile.modModeEnabled || false;
+    
+    // Initialize profile customization if missing
+    if (!currentProfile.username) {
+        currentProfile.username = generateDefaultUsername();
+        debug('🎮 Generated username:', currentProfile.username);
+    }
+    if (!currentProfile.avatarType) {
+        currentProfile.avatarType = 'emoji';
+        currentProfile.avatarData = '🏃';
+    }
 
     debug('Game totalCoins after sync:', totalCoins);
-
-        modModeEnabled = currentProfile.modModeEnabled || false;  // ADD THIS LINE
 
     
     // Sync leaderboard
@@ -8942,6 +9020,189 @@ function loadGameData(ignoreModMode = false) {
         function updateTotalCoins() {
             document.getElementById('totalCoins').textContent = `Coins: ${totalCoins}`;
         }
+
+
+        // Generate a default username
+function generateDefaultUsername() {
+    const adjectives = ['Swift', 'Bold', 'Epic', 'Quick', 'Super', 'Mega', 'Ultra', 'Fast', 'Cool', 'Star'];
+    const nouns = ['Runner', 'Dasher', 'Racer', 'Player', 'Hero', 'Champion', 'Speedster', 'Sprinter', 'Blitzer', 'Master'];
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const number = Math.floor(Math.random() * 1000);
+    return `${adj}${noun}${number}`;
+}
+
+// Trigger avatar upload
+function triggerAvatarUpload() {
+    document.getElementById('avatarUpload').click();
+}
+
+// Handle avatar upload
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file size (limit to 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        alert('❌ Image too large! Please choose an image under 2MB.');
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        alert('❌ Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Data = e.target.result;
+        
+        // Update avatar display
+        setAvatarImage(base64Data);
+        
+        // Save to profile
+        if (currentProfile) {
+            currentProfile.avatarType = 'image';
+            currentProfile.avatarData = base64Data;
+            saveGameData('avatar_update');
+            
+            showProfileNotification('Avatar updated!', '🖼️');
+        }
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+// Set avatar image
+function setAvatarImage(imageData) {
+    const avatarContainer = document.getElementById('profileAvatar');
+    const avatarEmoji = document.getElementById('avatarEmoji');
+    const avatarImage = document.getElementById('avatarImage');
+    
+    if (imageData.startsWith('data:image/')) {
+        // It's an uploaded image
+        avatarImage.src = imageData;
+        avatarImage.style.display = 'block';
+        avatarEmoji.style.display = 'none';
+        avatarContainer.style.background = 'none';
+    } else {
+        // It's an emoji
+        avatarEmoji.textContent = imageData;
+        avatarEmoji.style.display = 'flex';
+        avatarImage.style.display = 'none';
+        avatarContainer.style.background = 'linear-gradient(45deg, #4CAF50, #2196F3)';
+    }
+}
+
+// Edit username
+function editUsername() {
+    const modal = document.getElementById('usernameEditModal');
+    const input = document.getElementById('usernameInput');
+    const currentUsername = document.getElementById('profilePlayerName').textContent;
+    
+    input.value = currentUsername;
+    modal.style.display = 'flex';
+    
+    // Focus input after modal is visible
+    setTimeout(() => input.focus(), 100);
+}
+
+// Save username
+function saveUsername() {
+    const input = document.getElementById('usernameInput');
+    const newUsername = input.value.trim();
+    
+    if (!newUsername) {
+        alert('❌ Username cannot be empty!');
+        return;
+    }
+    
+    if (newUsername.length < 3) {
+        alert('❌ Username must be at least 3 characters!');
+        return;
+    }
+    
+    if (newUsername.length > 20) {
+        alert('❌ Username must be 20 characters or less!');
+        return;
+    }
+    
+    // Update profile
+    if (currentProfile) {
+        currentProfile.username = newUsername;
+        saveGameData('username_update');
+        
+        // Update display
+        document.getElementById('profilePlayerName').textContent = newUsername;
+        
+        showProfileNotification('Username updated!', '👤');
+    }
+    
+    closeUsernameModal();
+}
+
+// Close username modal
+function closeUsernameModal() {
+    document.getElementById('usernameEditModal').style.display = 'none';
+}
+
+// Show profile notification (similar to other notifications)
+function showProfileNotification(message, emoji) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 7000;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 24px; margin-bottom: 5px;">${emoji}</div>
+        <div>${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        notification.style.opacity = '0';
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 1500);
+}
+
+// Initialize profile data with defaults
+function initializeProfileData() {
+    if (!currentProfile.username) {
+        currentProfile.username = generateDefaultUsername();
+    }
+    if (!currentProfile.avatarType) {
+        currentProfile.avatarType = 'emoji';
+        currentProfile.avatarData = '🏃';
+    }
+}
         
         function startGame() {
 
@@ -9144,6 +9405,18 @@ dragonFireCooldown = 0;
 // Keyboard input, key handling, and desktop controls
 // Dependencies: Game Loop, Player Controls  
 // Functions: onKeyDown(), onKeyUp(), handleKeyboard(), etc.
+
+// Add keyboard support for username editing
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('usernameEditModal');
+    if (modal && modal.style.display === 'flex') {
+        if (e.key === 'Enter') {
+            saveUsername();
+        } else if (e.key === 'Escape') {
+            closeUsernameModal();
+        }
+    }
+});
         
         function onKeyDown(event) {
             if (gameOver) return;
