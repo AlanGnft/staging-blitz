@@ -11581,12 +11581,11 @@ function endGame() {
         if (isHighScore) {
             debug('🏆 High score achieved and auto-saved!');
             // Score was automatically saved in checkHighScore()
-            // No need to show the save button anymore
-            document.getElementById('newHighScoreMessage').style.display = 'none';
         } else {
             debug('🏆 Not a high score - no save needed');
-            document.getElementById('newHighScoreMessage').style.display = 'none';
         }
+        
+        // No need to show/hide save message since we removed it
         
         document.getElementById('gameOver').style.display = 'flex';
         
