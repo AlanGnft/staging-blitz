@@ -3475,8 +3475,127 @@ function formatDate(dateString) {
     // Save profile with high score reason - THIS WILL SHOW THE SAVE INDICATOR
     saveGameData('high_score');
     
-    // Show confirmation with username
-    alert(`Score saved! ${playerName}: ${currentScore} points`);
+    // Show beautiful confirmation notification
+    showHighScoreNotification(playerName, currentScore);
+}
+
+// Show high score saved notification
+function showHighScoreNotification(playerName, score) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #333;
+        padding: 25px 35px;
+        border-radius: 18px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 5000;
+        box-shadow: 0 12px 40px rgba(255, 215, 0, 0.4);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+        max-width: 350px;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 12px;">🏆</div>
+        <div style="font-size: 20px; margin-bottom: 8px; color: #333;">High Score Saved!</div>
+        <div style="font-size: 16px; color: #555; margin-bottom: 5px;">${playerName}</div>
+        <div style="font-size: 24px; font-weight: bold; color: #333;">${score.toLocaleString()} Points</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+        notification.style.opacity = '1';
+    });
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        notification.style.opacity = '0';
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 400);
+    }, 2500);
+}
+
+// Show mod mode notification
+function showModModeNotification(enabled, wrongPassword = false) {
+    const notification = document.createElement('div');
+    
+    let backgroundColor, emoji, title, message;
+    
+    if (wrongPassword) {
+        backgroundColor = 'linear-gradient(135deg, #F44336, #D32F2F)';
+        emoji = '❌';
+        title = 'Incorrect Password';
+        message = 'Please try again';
+    } else if (enabled) {
+        backgroundColor = 'linear-gradient(135deg, #4CAF50, #388E3C)';
+        emoji = '🔓';
+        title = 'Mod Mode Enabled';
+        message = 'All content unlocked!';
+    } else {
+        backgroundColor = 'linear-gradient(135deg, #FF9800, #F57C00)';
+        emoji = '🔒';
+        title = 'Mod Mode Disabled';
+        message = 'Content locked again';
+    }
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: ${backgroundColor};
+        color: white;
+        padding: 25px 30px;
+        border-radius: 16px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 5000;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+        max-width: 300px;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 42px; margin-bottom: 12px;">${emoji}</div>
+        <div style="font-size: 20px; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${title}</div>
+        <div style="font-size: 14px; opacity: 0.9; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+        notification.style.opacity = '1';
+    });
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        notification.style.opacity = '0';
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 400);
+    }, wrongPassword ? 2000 : 2500);
 }
 
 
@@ -3712,6 +3831,78 @@ function showGlobalLeaderboard() {
                 }
             }
         }
+
+        // Update existing global leaderboard entries with new avatar data
+function updateGlobalLeaderboardAvatar() {
+    if (!cloudSaveEnabled || !playerId) {
+        debug('⚠️ Cannot update global avatar - cloud save not available');
+        return;
+    }
+    
+    const playerName = currentProfile.username || 'Anonymous';
+    const newAvatar = currentProfile.avatarData || '🏃';
+    const newAvatarType = currentProfile.avatarType || 'emoji';
+    
+    debug('🔄 Updating global leaderboard entries with new avatar...');
+    
+    // Get all global leaderboard entries
+    firebase.database().ref('globalLeaderboard')
+        .orderByChild('playerId')
+        .equalTo(playerId)
+        .once('value')
+        .then((snapshot) => {
+            const userEntries = snapshot.val();
+            
+            if (userEntries) {
+                const updates = {};
+                let updateCount = 0;
+                
+                // Update each entry for this player
+                Object.keys(userEntries).forEach(entryKey => {
+                    const entry = userEntries[entryKey];
+                    
+                    // Only update if avatar data is different or missing
+                    if (!entry.avatar || entry.avatar !== newAvatar || 
+                        !entry.avatarType || entry.avatarType !== newAvatarType) {
+                        
+                        updates[`globalLeaderboard/${entryKey}/avatar`] = newAvatar;
+                        updates[`globalLeaderboard/${entryKey}/avatarType`] = newAvatarType;
+                        
+                        // Also update username if it changed
+                        if (entry.playerName !== playerName) {
+                            updates[`globalLeaderboard/${entryKey}/playerName`] = playerName;
+                        }
+                        
+                        updateCount++;
+                    }
+                });
+                
+                if (updateCount > 0) {
+                    // Apply all updates at once
+                    firebase.database().ref().update(updates)
+                        .then(() => {
+                            debug(`✅ Updated ${updateCount} global leaderboard entries with new avatar`);
+                            
+                            // Refresh the global leaderboard display
+                            loadGlobalLeaderboard();
+                            
+                            // Show a quick notification
+                            showProfileNotification(`Updated ${updateCount} leaderboard entries!`, '🏆');
+                        })
+                        .catch((error) => {
+                            console.error('❌ Failed to update global leaderboard entries:', error);
+                        });
+                } else {
+                    debug('ℹ️ No global leaderboard entries need updating');
+                }
+            } else {
+                debug('ℹ️ No existing global leaderboard entries found for this player');
+            }
+        })
+        .catch((error) => {
+            console.error('❌ Failed to check existing global leaderboard entries:', error);
+        });
+}
         
 
         
@@ -4171,18 +4362,18 @@ function setupMainMenuSettingsListeners() {
             saveGameData('mod_toggle');
             
             if (modModeEnabled) {
-                alert('🔓 Mod Mode Enabled! All content unlocked.');
+                showModModeNotification(true);
                 this.textContent = 'Disable';
                 this.style.background = '#F44336';
             } else {
-                alert('🔒 Mod Mode Disabled.');
+                showModModeNotification(false);
                 this.textContent = 'Enable';
                 this.style.background = '#9C27B0';
             }
             
             document.getElementById('mainMenuModPassword').value = '';
         } else {
-            alert('❌ Incorrect password!');
+            showModModeNotification(false, true); // true = wrong password
         }
     });
     
@@ -4505,7 +4696,7 @@ function purchaseCharacter(charName) {
         // Refresh shop display
         initShopScreen();
     } else {
-        alert(`❌ Not enough coins! You need ${cost} coins to unlock ${charName}.`);
+showInsufficientFundsNotification(cost, 'character');
     }
 }
 
@@ -4529,7 +4720,7 @@ function purchaseWorld(worldId) {
         // Refresh shop display
         initShopScreen();
     } else {
-        alert(`❌ Not enough coins! You need ${world.cost} coins to unlock ${world.name}.`);
+showInsufficientFundsNotification(world.cost, 'world');
     }
 }
 
@@ -8496,6 +8687,18 @@ function initializeSaveSystem() {
             loadGlobalLeaderboard(); // Load global scores on startup
         }
     }, 3000);
+
+    // Load global leaderboard after cloud save is ready
+    setTimeout(() => {
+        if (cloudSaveEnabled) {
+            loadGlobalLeaderboard(); // Load global scores on startup
+            
+            // Update any existing global entries with current avatar (after a delay)
+            setTimeout(() => {
+                updateGlobalLeaderboardAvatar();
+            }, 2000);
+        }
+    }, 3000);
     
     debug('✅ Save system initialized successfully!');
 }
@@ -9130,13 +9333,13 @@ function handleAvatarUpload(event) {
     
     // Check file size (limit to 2MB)
     if (file.size > 2 * 1024 * 1024) {
-        alert('❌ Image too large! Please choose an image under 2MB.');
+        showProfileErrorNotification('Image too large!', 'Please choose an image under 2MB');
         return;
     }
     
     // Check file type
     if (!file.type.startsWith('image/')) {
-        alert('❌ Please select a valid image file.');
+        showProfileErrorNotification('Invalid file type!', 'Please select a valid image file');
         return;
     }
     
@@ -9147,11 +9350,14 @@ function handleAvatarUpload(event) {
         // Update avatar display
         setAvatarImage(base64Data);
         
-        // Save to profile
+    // Save to profile
         if (currentProfile) {
             currentProfile.avatarType = 'image';
             currentProfile.avatarData = base64Data;
             saveGameData('avatar_update');
+            
+            // Update existing global leaderboard entries
+            updateGlobalLeaderboardAvatar();
             
             showProfileNotification('Avatar updated!', '🖼️');
         }
@@ -9200,17 +9406,17 @@ function saveUsername() {
     const newUsername = input.value.trim();
     
     if (!newUsername) {
-        alert('❌ Username cannot be empty!');
+        showProfileErrorNotification('Username cannot be empty!', 'Please enter a username');
         return;
     }
     
     if (newUsername.length < 3) {
-        alert('❌ Username must be at least 3 characters!');
+        showProfileErrorNotification('Username too short!', 'Must be at least 3 characters');
         return;
     }
     
     if (newUsername.length > 20) {
-        alert('❌ Username must be 20 characters or less!');
+        showProfileErrorNotification('Username too long!', 'Must be 20 characters or less');
         return;
     }
     
@@ -9220,9 +9426,12 @@ function saveUsername() {
         saveGameData('username_update');
         
         // Update display
-        document.getElementById('profilePlayerName').textContent = newUsername;
-        
-        showProfileNotification('Username updated!', '👤');
+    document.getElementById('profilePlayerName').textContent = newUsername;
+    
+    // Update existing global leaderboard entries
+    updateGlobalLeaderboardAvatar();
+    
+    showProfileNotification('Username updated!', '👤');
     }
     
     closeUsernameModal();
@@ -9288,6 +9497,110 @@ function initializeProfileData() {
         currentProfile.avatarType = 'emoji';
         currentProfile.avatarData = '🏃';
     }
+}
+
+
+// Show profile error notification
+function showProfileErrorNotification(title, message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: linear-gradient(135deg, #F44336, #D32F2F);
+        color: white;
+        padding: 20px 25px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 7000;
+        box-shadow: 0 10px 30px rgba(244, 67, 54, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+        max-width: 320px;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 36px; margin-bottom: 10px;">⚠️</div>
+        <div style="font-size: 18px; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${title}</div>
+        <div style="font-size: 14px; opacity: 0.9; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+        notification.style.opacity = '1';
+    });
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        notification.style.opacity = '0';
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 2500);
+}
+
+// Show insufficient funds notification
+function showInsufficientFundsNotification(cost, itemType) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: linear-gradient(135deg, #FF5722, #D84315);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 16px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 5000;
+        box-shadow: 0 12px 40px rgba(255, 87, 34, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+        max-width: 320px;
+    `;
+    
+    const currentCoins = totalCoins;
+    const needed = cost - currentCoins;
+    
+    notification.innerHTML = `
+        <div style="font-size: 42px; margin-bottom: 12px;">💸</div>
+        <div style="font-size: 20px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Not Enough Coins!</div>
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">You have: ${currentCoins} coins</div>
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Need: ${cost} coins</div>
+        <div style="font-size: 16px; color: #FFD700; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Play more to earn ${needed} more coins!</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(1)';
+        notification.style.opacity = '1';
+    });
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        notification.style.opacity = '0';
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 400);
+    }, 3000);
 }
         
         function startGame() {
