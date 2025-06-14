@@ -2900,9 +2900,7 @@ loadWorldScenery(currentWorld).then(() => {
             document.getElementById('pauseSettingsBtn').onclick = toggleSettingsFromPause;
             document.getElementById('pauseBtn').onclick = togglePause;
             document.getElementById('closeSettingsButton').onclick = closeSettingsScreen;
-            document.getElementById('resetDataButton').onclick = resetGameData;
             document.getElementById('saveScoreButton').onclick = saveHighScore;
-            document.getElementById('applyDifficultyButton').onclick = applyDifficultyOverride;
 
 document.getElementById('soundEffectsCheckbox').addEventListener('change', function() {
     soundEffectsEnabled = this.checked;
@@ -2944,26 +2942,7 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
     // Initialize jukebox
     initializeJukebox();
 
-    // Update mod mode UI based on CURRENT state
-    if (modModeEnabled) {
-        document.getElementById('mod-mode-option').classList.add('enabled');
-        document.getElementById('modModeButton').textContent = 'Disable';
-        
-        // Show difficulty override option since mod mode is active
-        const difficultyOption = document.getElementById('difficulty-override-option');
-        if (difficultyOption) {
-            difficultyOption.style.display = 'flex';
-        }
-    } else {
-        document.getElementById('mod-mode-option').classList.remove('enabled');
-        document.getElementById('modModeButton').textContent = 'Enable';
-        
-        // Hide difficulty override option since mod mode is inactive
-        const difficultyOption = document.getElementById('difficulty-override-option');
-        if (difficultyOption) {
-            difficultyOption.style.display = 'none';
-        }
-    }
+    
 }
 
         // Initialize jukebox system
@@ -6741,14 +6720,6 @@ beetleGroup.add(head);
                 // Update character display in settings
                 updateCharactersInSettings();
                 
-                // Update mod mode display
-                if (modModeEnabled) {
-                    document.getElementById('mod-mode-option').classList.add('enabled');
-                    document.getElementById('modModeButton').textContent = 'Disable';
-                } else {
-                    document.getElementById('mod-mode-option').classList.remove('enabled');
-                    document.getElementById('modModeButton').textContent = 'Enable';
-                }
                 
                 // Update leaderboard
                 updateLeaderboardDisplay();
@@ -6874,9 +6845,6 @@ currentCharacter = 'apple';
 currentWorld = 'classic';
                 
                 // Update UI
-                document.getElementById('mod-mode-option').classList.remove('enabled');
-                document.getElementById('modModeButton').textContent = 'Enable';
-                document.getElementById('modPassword').value = '';
                 updateTotalCoins();
                 updateCharactersInSettings();
                 
