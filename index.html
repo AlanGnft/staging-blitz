@@ -1678,11 +1678,6 @@ setTimeout(() => {
     <h2 style="margin-top: 0;">Game Over</h2>
     <span id="finalScore" style="font-size: 24px;"></span><br>
     <span id="coinsCollected" style="font-size: 20px; margin-bottom: 15px; display: inline-block;"></span><br>
-    <div id="newHighScoreMessage" style="display: none; color: gold; margin: 10px 0;">
-        <div style="margin-bottom: 10px; font-size: 22px;">New High Score!</div>
-        <div id="highScorePlayerDisplay" style="margin-bottom: 10px; font-size: 16px; color: white;">Playing as: Loading...</div>
-        <button id="saveScoreButton">Save Score</button>
-    </div>
     <div class="game-buttons" style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto;">
         <button id="restartButton" class="game-button">Restart</button>
         <button id="gameOverMainMenuBtn" class="game-button">Main Menu</button>
@@ -3537,6 +3532,44 @@ function formatDate(dateString) {
     showHighScoreNotification(playerName, currentScore);
 
     
+}
+
+// Auto-save high score (called automatically when game ends)
+function autoSaveHighScore(currentScore) {
+    const playerName = currentProfile.username || 'Anonymous';
+    
+    // Get existing leaderboard
+    let leaderboard = JSON.parse(localStorage.getItem('runningBlitzLeaderboard') || '[]');
+    
+    // Add new score with avatar data
+    leaderboard.push({
+        name: playerName,
+        score: currentScore,
+        character: currentCharacter,
+        date: new Date().toLocaleDateString(),
+        avatar: currentProfile.avatarData || '🏃',
+        avatarType: currentProfile.avatarType || 'emoji'
+    });
+    
+    // Sort by score (highest first)
+    leaderboard.sort((a, b) => b.score - a.score);
+    
+    // Keep only top 10
+    leaderboard = leaderboard.slice(0, 10);
+    
+    // Save back to localStorage
+    localStorage.setItem('runningBlitzLeaderboard', JSON.stringify(leaderboard));
+    
+    debug('💾 Auto-saved high score for:', playerName, 'Score:', currentScore);
+
+    // Submit to global leaderboard
+    submitToGlobalLeaderboard(playerName, currentScore, currentCharacter);
+    
+    // Save profile with high score reason
+    saveGameData('high_score');
+    
+    // Show beautiful confirmation notification instead of the save button
+    showHighScoreNotification(playerName, currentScore);
 }
 
 // Show high score saved notification
@@ -11547,18 +11580,12 @@ function endGame() {
         debug('🏆 Is high score result:', isHighScore);
 
         if (isHighScore) {
-            debug('🏆 Showing name entry form');
-            
-            // Update the username display
-            const playerName = currentProfile.username || 'Anonymous';
-            const playerDisplay = document.getElementById('highScorePlayerDisplay');
-            if (playerDisplay) {
-                playerDisplay.textContent = `Playing as: ${playerName}`;
-            }
-            
-            document.getElementById('newHighScoreMessage').style.display = 'block';
+            debug('🏆 High score achieved and auto-saved!');
+            // Score was automatically saved in checkHighScore()
+            // No need to show the save button anymore
+            document.getElementById('newHighScoreMessage').style.display = 'none';
         } else {
-            debug('🏆 Not a high score - hiding name entry');
+            debug('🏆 Not a high score - no save needed');
             document.getElementById('newHighScoreMessage').style.display = 'none';
         }
         
@@ -11584,15 +11611,21 @@ function checkHighScore(currentScore) {
 
     // Update profile high score regardless of leaderboard position
     if (currentScore > (currentProfile.highScore || 0)) {
-        const oldScore = currentProfile.highScore || 0; // Fixed: declare oldScore properly
+        const oldScore = currentProfile.highScore || 0;
         currentProfile.highScore = currentScore;
         currentProfile.lastPlayed = new Date().toISOString();
         saveGameData('high_score');
         
         debug('🏆 Profile high score updated!', {
-            oldScore: oldScore, // Fixed: use oldScore instead of oldHighScore
+            oldScore: oldScore,
             newScore: currentScore
         });
+    }
+    
+    // AUTO-SAVE: If it's a high score, automatically save it to leaderboard
+    if (isHighScore) {
+        debug('🏆 Auto-saving high score to leaderboard...');
+        autoSaveHighScore(currentScore);
     }
     
     debug(`Checking high score: ${currentScore}, is high score: ${isHighScore}`);
