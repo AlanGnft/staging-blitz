@@ -2812,35 +2812,81 @@ function updateSpeedIndicator() {
         
 // Setup mobile touch controls with swipe gestures
 function setupMobileControls() {
-    showDebugMessage('Setting up mobile controls...');
+    alert('Mobile controls setup starting...'); // This should show on Safari
     
     const touchArea = document.getElementById('touchArea');
-    showDebugMessage(`TouchArea found: ${touchArea ? 'YES' : 'NO'}`);
     
     if (!touchArea) {
-        showDebugMessage('ERROR: touchArea not found!');
-        // Try using document.body as fallback
-        setupBodyTouchControls();
+        alert('TouchArea not found - using body');
+        // Use document.body as fallback
+        document.body.addEventListener('touchstart', function(e) {
+            alert('Body touch detected!');
+            handleTouchStart(e);
+        });
+        
+        document.body.addEventListener('touchend', function(e) {
+            handleTouchEnd(e);
+        });
         return;
     }
     
-    showDebugMessage('Adding event listeners to touchArea...');
+    alert('TouchArea found - adding listeners');
     
-    // Try multiple element targets for Safari
-    const targets = [touchArea, document.body, window];
+    // Simple direct event binding
+    touchArea.ontouchstart = function(e) {
+        alert('Touch start!');
+        handleTouchStart(e);
+    };
     
-    targets.forEach((target, index) => {
-        target.addEventListener('touchstart', function(e) {
-            showDebugMessage(`Touch start on target ${index}`);
-            handleTouchStart(e);
-        }, { passive: false });
-        
-        target.addEventListener('touchend', function(e) {
-            showDebugMessage(`Touch end on target ${index}`);
-            handleTouchEnd(e);
-        }, { passive: false });
-    });
+    touchArea.ontouchend = function(e) {
+        alert('Touch end!');
+        handleTouchEnd(e);
+    };
+    
+    // Also try click as fallback
+    touchArea.onclick = function(e) {
+        alert('Click detected!');
+        if (!jumping) {
+            jump();
+        }
+    };
 }
+
+function handleTouchStart(e) {
+    if (!gameStarted || gameOver || gamePaused) return;
+    
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+}
+
+function handleTouchEnd(e) {
+    if (!gameStarted || gameOver || gamePaused) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const touchTime = Date.now() - touchStartTime;
+    
+    if (touchTime < 300) {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchStartY - touchEndY;
+        
+        if (Math.abs(deltaX) > 30) {
+            if (deltaX > 0) {
+                moveRight();
+            } else {
+                moveLeft();
+            }
+        } else if (Math.abs(deltaY) > 30) {
+            if (deltaY > 0 && !jumping) {
+                jump();
+            } else if (deltaY < 0) {
+                quickDrop();
+            }
+        }
+    }
+}
+
 
 // Fallback function if touchArea doesn't exist
 function setupBodyTouchControls() {
