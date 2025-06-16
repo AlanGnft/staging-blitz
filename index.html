@@ -2814,54 +2814,50 @@ function updateSpeedIndicator() {
 function setupMobileControls() {
     const touchArea = document.getElementById('touchArea');
     
-    // Safari iOS Touch Fix
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        touchArea.style.touchAction = 'manipulation';
-        touchArea.style.webkitTouchCallout = 'none';
-        touchArea.style.webkitUserSelect = 'none';
-        touchArea.style.userSelect = 'none';
-    }
+    // Force Safari to recognize touch events
+    touchArea.style.touchAction = 'none';
+    touchArea.style.webkitTouchCallout = 'none';
+    touchArea.style.webkitUserSelect = 'none';
     
     // Simplified swipe detection to prevent freezing
     let lastTouchY = 0;
     
-    touchArea.addEventListener('touchstart', function(e) {
+    // Use more aggressive event binding for Safari
+    function handleTouchStart(e) {
         if (!gameStarted || gameOver || gamePaused) return;
         
-        // Safari-specific preventDefault handling
-        if (e.cancelable) {
-            e.preventDefault();
-        }
+        e.stopPropagation();
+        e.preventDefault();
         
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchY = touchStartY;
         touchStartTime = Date.now();
-    }, { passive: false }); // Safari needs passive: false
+        
+        console.log('Touch start detected on Safari'); // Debug log
+    }
     
-    touchArea.addEventListener('touchend', function(e) {
+    function handleTouchEnd(e) {
         if (!gameStarted || gameOver || gamePaused) return;
         
-        // Safari-specific preventDefault handling
-        if (e.cancelable) {
-            e.preventDefault();
-        }
+        e.stopPropagation();
+        e.preventDefault();
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const touchTime = Date.now() - touchStartTime;
         
+        console.log('Touch end detected on Safari'); // Debug log
+        
         // Simple, reliable swipe detection
-        if (touchTime < 300) { // Short swipe = faster response
+        if (touchTime < 300) {
             const deltaX = touchEndX - touchStartX;
-            const deltaY = touchStartY - touchEndY; // Note: reversed for Y
+            const deltaY = touchStartY - touchEndY;
             
-            // Simple thresholds
             const minSwipeDistance = 30;
             
-            // Determine primary direction of swipe
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                // Horizontal swipe
+                console.log('Horizontal swipe:', deltaX > 0 ? 'right' : 'left');
                 if (deltaX > 0) {
                     moveRight();
                 } else {
@@ -2869,26 +2865,35 @@ function setupMobileControls() {
                 }
             } 
             else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
-                // Vertical swipe
+                console.log('Vertical swipe:', deltaY > 0 ? 'up' : 'down');
                 if (deltaY > 0 && !jumping) {
-                    // Swipe up to jump (only if not already jumping)
                     jump();
                 } else if (deltaY < 0) {
-                    // Swipe down to quick drop
                     quickDrop();
                 }
             }
         }
-    }, { passive: false }); // Safari needs passive: false
+    }
     
-    // Additional Safari fix - prevent default touch behaviors on the touch area
-    touchArea.addEventListener('touchmove', function(e) {
-        if (e.cancelable) {
-            e.preventDefault();
+    // Remove any existing listeners first
+    touchArea.removeEventListener('touchstart', handleTouchStart);
+    touchArea.removeEventListener('touchend', handleTouchEnd);
+    
+    // Add new listeners with multiple binding methods for Safari
+    touchArea.addEventListener('touchstart', handleTouchStart, { passive: false, capture: true });
+    touchArea.addEventListener('touchend', handleTouchEnd, { passive: false, capture: true });
+    touchArea.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+    
+    // Also try onclick as backup for Safari
+    touchArea.onclick = function(e) {
+        if (!gameStarted || gameOver || gamePaused) return;
+        console.log('Click fallback triggered on Safari');
+        // Could add tap-to-jump here as fallback
+        if (!jumping) {
+            jump();
         }
-    }, { passive: false });
+    };
 }
-        
 
 // ==================== GAME INITIALIZATION ====================
 // Core game setup and initialization functions
