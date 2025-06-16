@@ -2903,6 +2903,12 @@ function setupMobileControls() {
 // Initialize audio system
     initializeAudio();
 
+    // Safari iPad Touch Fix
+if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    document.addEventListener('touchstart', function() {}, { passive: false });
+    document.addEventListener('touchmove', function() {}, { passive: false });
+}
+
 // Background music system
 let backgroundMusic = null;
 let musicPlaying = false;
