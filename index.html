@@ -2824,18 +2824,22 @@ function setupMobileControls() {
     
     // Use more aggressive event binding for Safari
     function handleTouchStart(e) {
-        if (!gameStarted || gameOver || gamePaused) return;
-        
-        e.stopPropagation();
-        e.preventDefault();
-        
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        lastTouchY = touchStartY;
-        touchStartTime = Date.now();
-        
-        console.log('Touch start detected on Safari'); // Debug log
+    showDebugMessage('Touch start detected!');
+    if (!gameStarted || gameOver || gamePaused) {
+        showDebugMessage('Game not ready for input');
+        return;
     }
+    
+    e.stopPropagation();
+    e.preventDefault();
+    
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    lastTouchY = touchStartY;
+    touchStartTime = Date.now();
+    
+    showDebugMessage(`Start: ${touchStartX}, ${touchStartY}`);
+}
     
     function handleTouchEnd(e) {
         if (!gameStarted || gameOver || gamePaused) return;
@@ -13130,6 +13134,35 @@ window.addEventListener('blur', function() {
 
 // Start auto-save when game starts
 startAutoSave();
+
+
+// Debug function to show messages on screen for iPad testing
+function showDebugMessage(message) {
+    const debugDiv = document.getElementById('safariDebug') || createDebugDiv();
+    debugDiv.innerHTML += message + '<br>';
+    debugDiv.scrollTop = debugDiv.scrollHeight;
+}
+
+function createDebugDiv() {
+    const debugDiv = document.createElement('div');
+    debugDiv.id = 'safariDebug';
+    debugDiv.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 300px;
+        height: 200px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        font-size: 12px;
+        padding: 10px;
+        z-index: 9999;
+        overflow-y: scroll;
+        border: 1px solid white;
+    `;
+    document.body.appendChild(debugDiv);
+    return debugDiv;
+}
     </script>
 
     <script>
