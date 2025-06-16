@@ -2812,92 +2812,104 @@ function updateSpeedIndicator() {
         
 // Setup mobile touch controls with swipe gestures
 function setupMobileControls() {
+    showDebugMessage('Setting up mobile controls...');
+    
     const touchArea = document.getElementById('touchArea');
+    showDebugMessage(`TouchArea found: ${touchArea ? 'YES' : 'NO'}`);
     
-    // Force Safari to recognize touch events
-    touchArea.style.touchAction = 'none';
-    touchArea.style.webkitTouchCallout = 'none';
-    touchArea.style.webkitUserSelect = 'none';
+    if (!touchArea) {
+        showDebugMessage('ERROR: touchArea not found!');
+        // Try using document.body as fallback
+        setupBodyTouchControls();
+        return;
+    }
     
-    // Simplified swipe detection to prevent freezing
-    let lastTouchY = 0;
+    showDebugMessage('Adding event listeners to touchArea...');
     
-    // Use more aggressive event binding for Safari
-    function handleTouchStart(e) {
-    showDebugMessage('Touch start detected!');
+    // Try multiple element targets for Safari
+    const targets = [touchArea, document.body, window];
+    
+    targets.forEach((target, index) => {
+        target.addEventListener('touchstart', function(e) {
+            showDebugMessage(`Touch start on target ${index}`);
+            handleTouchStart(e);
+        }, { passive: false });
+        
+        target.addEventListener('touchend', function(e) {
+            showDebugMessage(`Touch end on target ${index}`);
+            handleTouchEnd(e);
+        }, { passive: false });
+    });
+}
+
+// Fallback function if touchArea doesn't exist
+function setupBodyTouchControls() {
+    showDebugMessage('Setting up body touch controls as fallback...');
+    
+    document.body.addEventListener('touchstart', function(e) {
+        showDebugMessage('Body touch start detected');
+        handleTouchStart(e);
+    }, { passive: false });
+    
+    document.body.addEventListener('touchend', function(e) {
+        showDebugMessage('Body touch end detected');
+        handleTouchEnd(e);
+    }, { passive: false });
+}
+
+function handleTouchStart(e) {
+    showDebugMessage('handleTouchStart called');
     if (!gameStarted || gameOver || gamePaused) {
         showDebugMessage('Game not ready for input');
         return;
     }
     
-    e.stopPropagation();
-    e.preventDefault();
+    if (e.preventDefault) e.preventDefault();
     
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    lastTouchY = touchStartY;
     touchStartTime = Date.now();
     
-    showDebugMessage(`Start: ${touchStartX}, ${touchStartY}`);
+    showDebugMessage(`Touch recorded: ${touchStartX}, ${touchStartY}`);
 }
+
+function handleTouchEnd(e) {
+    showDebugMessage('handleTouchEnd called');
+    if (!gameStarted || gameOver || gamePaused) return;
     
-    function handleTouchEnd(e) {
-        if (!gameStarted || gameOver || gamePaused) return;
+    if (e.preventDefault) e.preventDefault();
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const touchTime = Date.now() - touchStartTime;
+    
+    showDebugMessage(`Touch end: ${touchEndX}, ${touchEndY}, time: ${touchTime}ms`);
+    
+    if (touchTime < 300) {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchStartY - touchEndY;
         
-        e.stopPropagation();
-        e.preventDefault();
+        const minSwipeDistance = 30;
         
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const touchTime = Date.now() - touchStartTime;
-        
-        console.log('Touch end detected on Safari'); // Debug log
-        
-        // Simple, reliable swipe detection
-        if (touchTime < 300) {
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchStartY - touchEndY;
-            
-            const minSwipeDistance = 30;
-            
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                console.log('Horizontal swipe:', deltaX > 0 ? 'right' : 'left');
-                if (deltaX > 0) {
-                    moveRight();
-                } else {
-                    moveLeft();
-                }
-            } 
-            else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
-                console.log('Vertical swipe:', deltaY > 0 ? 'up' : 'down');
-                if (deltaY > 0 && !jumping) {
-                    jump();
-                } else if (deltaY < 0) {
-                    quickDrop();
-                }
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+            showDebugMessage(`Horizontal swipe: ${deltaX > 0 ? 'right' : 'left'}`);
+            if (deltaX > 0) {
+                moveRight();
+            } else {
+                moveLeft();
+            }
+        } 
+        else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+            showDebugMessage(`Vertical swipe: ${deltaY > 0 ? 'up' : 'down'}`);
+            if (deltaY > 0 && !jumping) {
+                jump();
+            } else if (deltaY < 0) {
+                quickDrop();
             }
         }
     }
-    
-    // Remove any existing listeners first
-    touchArea.removeEventListener('touchstart', handleTouchStart);
-    touchArea.removeEventListener('touchend', handleTouchEnd);
-    
-    // Add new listeners with multiple binding methods for Safari
-    touchArea.addEventListener('touchstart', handleTouchStart, { passive: false, capture: true });
-    touchArea.addEventListener('touchend', handleTouchEnd, { passive: false, capture: true });
-    touchArea.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-    
-    // Also try onclick as backup for Safari
-    touchArea.onclick = function(e) {
-        if (!gameStarted || gameOver || gamePaused) return;
-        console.log('Click fallback triggered on Safari');
-        // Could add tap-to-jump here as fallback
-        if (!jumping) {
-            jump();
-        }
-    };
 }
+
 
 // ==================== GAME INITIALIZATION ====================
 // Core game setup and initialization functions
