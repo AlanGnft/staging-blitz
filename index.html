@@ -1022,6 +1022,26 @@ setTimeout(() => {
     touch-action: manipulation;
 }
 
+/* Safari iOS Touch Fixes */
+body, html {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+canvas {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+/* Prevent Safari zoom on double-tap */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+}
+
     </style>
 </head>
 <body>
