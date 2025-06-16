@@ -1015,6 +1015,13 @@ setTimeout(() => {
     }
 }
 
+#touchArea {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
     </style>
 </head>
 <body>
@@ -2783,62 +2790,86 @@ function updateSpeedIndicator() {
 // Functions: setupMobileControls(), handleTouch(), etc.
 
         
-        // Setup mobile touch controls with swipe gestures
-        function setupMobileControls() {
-            const touchArea = document.getElementById('touchArea');
-            
-            // Simplified swipe detection to prevent freezing
-            let lastTouchY = 0;
-            
-            touchArea.addEventListener('touchstart', function(e) {
-                if (!gameStarted || gameOver || gamePaused) return;
-                
-                e.preventDefault();
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                lastTouchY = touchStartY;
-                touchStartTime = Date.now();
-            });
-            
-            touchArea.addEventListener('touchend', function(e) {
-                if (!gameStarted || gameOver || gamePaused) return;
-                
-                e.preventDefault();
-                const touchEndX = e.changedTouches[0].clientX;
-                const touchEndY = e.changedTouches[0].clientY;
-                const touchTime = Date.now() - touchStartTime;
-                
-                // Simple, reliable swipe detection
-                if (touchTime < 300) { // Short swipe = faster response
-                    const deltaX = touchEndX - touchStartX;
-                    const deltaY = touchStartY - touchEndY; // Note: reversed for Y
-                    
-                    // Simple thresholds
-                    const minSwipeDistance = 30;
-                    
-                    // Determine primary direction of swipe
-                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                        // Horizontal swipe
-                        if (deltaX > 0) {
-                            moveRight();
-                        } else {
-                            moveLeft();
-                        }
-                    } 
-                    else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
-                        // Vertical swipe
-                        if (deltaY > 0 && !jumping) {
-                            // Swipe up to jump (only if not already jumping)
-                            jump();
-                        } else if (deltaY < 0) {
-                            // Swipe down to quick drop
-                            quickDrop();
-                        }
-                    }
-                }
-            });
+// Setup mobile touch controls with swipe gestures
+function setupMobileControls() {
+    const touchArea = document.getElementById('touchArea');
+    
+    // Safari iOS Touch Fix
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        touchArea.style.touchAction = 'manipulation';
+        touchArea.style.webkitTouchCallout = 'none';
+        touchArea.style.webkitUserSelect = 'none';
+        touchArea.style.userSelect = 'none';
+    }
+    
+    // Simplified swipe detection to prevent freezing
+    let lastTouchY = 0;
+    
+    touchArea.addEventListener('touchstart', function(e) {
+        if (!gameStarted || gameOver || gamePaused) return;
+        
+        // Safari-specific preventDefault handling
+        if (e.cancelable) {
+            e.preventDefault();
         }
         
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        lastTouchY = touchStartY;
+        touchStartTime = Date.now();
+    }, { passive: false }); // Safari needs passive: false
+    
+    touchArea.addEventListener('touchend', function(e) {
+        if (!gameStarted || gameOver || gamePaused) return;
+        
+        // Safari-specific preventDefault handling
+        if (e.cancelable) {
+            e.preventDefault();
+        }
+        
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchTime = Date.now() - touchStartTime;
+        
+        // Simple, reliable swipe detection
+        if (touchTime < 300) { // Short swipe = faster response
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchStartY - touchEndY; // Note: reversed for Y
+            
+            // Simple thresholds
+            const minSwipeDistance = 30;
+            
+            // Determine primary direction of swipe
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                // Horizontal swipe
+                if (deltaX > 0) {
+                    moveRight();
+                } else {
+                    moveLeft();
+                }
+            } 
+            else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+                // Vertical swipe
+                if (deltaY > 0 && !jumping) {
+                    // Swipe up to jump (only if not already jumping)
+                    jump();
+                } else if (deltaY < 0) {
+                    // Swipe down to quick drop
+                    quickDrop();
+                }
+            }
+        }
+    }, { passive: false }); // Safari needs passive: false
+    
+    // Additional Safari fix - prevent default touch behaviors on the touch area
+    touchArea.addEventListener('touchmove', function(e) {
+        if (e.cancelable) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+}
+        
+
 // ==================== GAME INITIALIZATION ====================
 // Core game setup and initialization functions
 // Dependencies: THREE.js, Audio System, Object Pools
