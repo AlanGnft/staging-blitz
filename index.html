@@ -89,38 +89,66 @@ setTimeout(() => {
         #pauseBtn {
     position: absolute;
     top: 95px;
-    right: 70px; /* Move pause button to the left */
-    width: 40px;
-    height: 40px;
-    background-color: rgba(255, 255, 255, 0.3);
+    right: 70px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    font-size: 18px;
     color: white;
     cursor: pointer;
     z-index: 100;
-    border: none;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#pauseBtn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+#pauseBtn:active {
+    transform: scale(0.95);
 }
 
 #skipBtn {
     position: absolute;
     top: 95px;
-    right: 20px; /* Same as pause button */
-    width: 40px;
-    height: 40px;
-    background-color: rgba(255, 255, 255, 0.3);
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    font-size: 18px;
     color: white;
     cursor: pointer;
     z-index: 100;
-    border: none;
     transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#skipBtn:hover {
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    border-color: rgba(76, 175, 80, 1);
+}
+
+#skipBtn:active {
+    transform: scale(0.95);
 }
 
 #skipBtn:hover {
@@ -169,20 +197,20 @@ setTimeout(() => {
     }
     
     #pauseBtn {
-        width: 35px;
-        height: 35px;
-        font-size: 20px;
-        top: 80px;
-        right: 60px; /* Move pause button to the left */
-    }
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+    top: 80px;
+    right: 60px;
+}
 
-    #skipBtn {
-        width: 35px;
-        height: 35px;
-        font-size: 20px;
-        top: 80px;
-        right: 15px; /* Same as pause button */
-    }
+#skipBtn {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+    top: 80px;
+    right: 15px;
+}
     
     #speedIndicator {
     top: 15px;
@@ -3063,22 +3091,14 @@ document.getElementById('soundEffectsCheckbox').addEventListener('change', funct
     saveGameData('settings_change');
 });
 
-// Skip button (add this after your pause button initialization)
+// Skip button
 const skipBtn = document.getElementById('skipBtn');
 if (skipBtn) {
     skipBtn.addEventListener('click', () => {
-        console.log('Skip button clicked - checking functions...');
-        console.log('window.skipToNextTrack exists:', !!window.skipToNextTrack);
-        console.log('window.AudioSystem.skipToNextTrack exists:', !!(window.AudioSystem && window.AudioSystem.skipToNextTrack));
-        
         if (window.skipToNextTrack) {
-            console.log('Calling window.skipToNextTrack()');
             window.skipToNextTrack();
         } else if (window.AudioSystem && window.AudioSystem.skipToNextTrack) {
-            console.log('Calling window.AudioSystem.skipToNextTrack()');
             window.AudioSystem.skipToNextTrack();
-        } else {
-            console.error('No skipToNextTrack function found!');
         }
     });
     
@@ -3089,10 +3109,7 @@ if (skipBtn) {
         skipBtn.style.opacity = isShuffleMode ? '1' : '0.5';
     };
     
-    // Update button visibility initially and when shuffle mode changes
     updateSkipButton();
-    
-    // Check periodically for shuffle mode changes (simple approach)
     setInterval(updateSkipButton, 1000);
 }
 
