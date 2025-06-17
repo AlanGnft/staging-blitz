@@ -96,6 +96,9 @@ function playPowerUpSound() {
 function startBackgroundMusic() {
     if (!audioInitialized || musicPlaying || !backgroundMusicEnabled) return;
     
+    // Add debugging to see what's calling this function repeatedly
+    console.trace('startBackgroundMusic called from:');
+    
     // Stop any existing music first
     if (backgroundMusic) {
         backgroundMusic.pause();
@@ -152,6 +155,8 @@ function startBackgroundMusic() {
         window.startingMusic = false; // Clear the flag even on error
     });
 }
+
+
 function stopBackgroundMusic() {
     if (!backgroundMusic || !musicPlaying) return;
     
@@ -162,6 +167,10 @@ function stopBackgroundMusic() {
 }
 
 function updateBackgroundMusic() {
+    // Temporarily disabled to debug the loop issue
+    console.log('updateBackgroundMusic called - temporarily disabled');
+    return;
+    
     if (!backgroundMusic || !musicPlaying) return;
     
     // Check if track changed
@@ -177,9 +186,6 @@ function updateBackgroundMusic() {
     const baseVolume = 0.5;
     const maxVolume = 0.7;
     backgroundMusic.volume = baseVolume + (speedProgress * (maxVolume - baseVolume));
-    
-    // You can also adjust playback rate for tempo changes (optional)
-    // backgroundMusic.playbackRate = 1.0 + (speedProgress * 0.2); // Up to 20% faster
 }
 
 // ==================== SHUFFLE MODE FUNCTIONS ====================
