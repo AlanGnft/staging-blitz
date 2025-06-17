@@ -95,9 +95,7 @@ function playPowerUpSound() {
 // Background music functions
 function startBackgroundMusic() {
     if (!audioInitialized || musicPlaying || !backgroundMusicEnabled) return;
-    
-    // Add debugging to see what's calling this function repeatedly
-    console.trace('startBackgroundMusic called from:');
+
     
     // Stop any existing music first
     if (backgroundMusic) {
