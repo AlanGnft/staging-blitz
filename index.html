@@ -3067,10 +3067,18 @@ document.getElementById('soundEffectsCheckbox').addEventListener('change', funct
 const skipBtn = document.getElementById('skipBtn');
 if (skipBtn) {
     skipBtn.addEventListener('click', () => {
+        console.log('Skip button clicked - checking functions...');
+        console.log('window.skipToNextTrack exists:', !!window.skipToNextTrack);
+        console.log('window.AudioSystem.skipToNextTrack exists:', !!(window.AudioSystem && window.AudioSystem.skipToNextTrack));
+        
         if (window.skipToNextTrack) {
+            console.log('Calling window.skipToNextTrack()');
             window.skipToNextTrack();
         } else if (window.AudioSystem && window.AudioSystem.skipToNextTrack) {
+            console.log('Calling window.AudioSystem.skipToNextTrack()');
             window.AudioSystem.skipToNextTrack();
+        } else {
+            console.error('No skipToNextTrack function found!');
         }
     });
     
