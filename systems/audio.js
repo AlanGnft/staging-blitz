@@ -400,75 +400,30 @@ window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessibl
 window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
 
 
-// Skip to next track (for shuffle mode)
+// Skip to next track (for shuffle mode) - SIMPLIFIED VERSION
 function skipToNextTrack() {
     if (!shuffleMode) {
-        debug('⏭️ Skip only works in shuffle mode');
+        console.log('⏭️ Skip only works in shuffle mode');
         return;
     }
     
     if (!backgroundMusicEnabled) {
-        debug('⏭️ Background music is disabled');f
+        console.log('⏭️ Background music is disabled');
         return;
     }
     
-    debug('⏭️ Skipping to next track...');
-    debug('⏭️ availableTracks:', availableTracks);
-    debug('⏭️ shuffleQueue length:', shuffleQueue.length);
-    debug('⏭️ shuffleQueue contents:', shuffleQueue);
-    debug('⏭️ Current shuffle index before skip:', currentShuffleIndex);
-    debug('⏭️ Current shuffle queue:', shuffleQueue);
+    console.log('⏭️ Skipping to next track...');
     
     // Stop current music cleanly
     stopBackgroundMusic();
     
-    // IMPORTANT: Force advance to next track in shuffle queue
-    // Don't just call startBackgroundMusic() which might replay the same track
-    
-    // Get the next track manually
-    if (shuffleQueue.length === 0) {
-        initializeShuffleQueue();
-    }
-    
-    // Advance to next track in queue
-    const nextTrack = shuffleQueue[currentShuffleIndex];
-    currentShuffleIndex = (currentShuffleIndex + 1) % shuffleQueue.length;
-    
-    // Re-shuffle when we've played all tracks
-    if (currentShuffleIndex === 0) {
-        shuffleArray(shuffleQueue);
-        debug('🔀 Re-shuffled queue:', shuffleQueue);
-    }
-    
-    debug('⏭️ Next track will be:', nextTrack);
-    debug('⏭️ New shuffle index:', currentShuffleIndex);
-    
-    // Wait a moment then start the specific next track
+    // Wait a moment then start next track
     setTimeout(() => {
+        // Only start music if game conditions are right
         if (backgroundMusicEnabled && gameStarted && !gameOver && !gamePaused) {
-            // Create new audio element for the specific next track
-            backgroundMusic = new Audio(`assets/audio/${nextTrack}-track.mp3`);
-            backgroundMusic.loop = false; // Don't loop in shuffle mode
-            backgroundMusic.volume = 0.5;
-            
-            // Add event listener for track end
-            backgroundMusic.addEventListener('ended', handleTrackEnd);
-            
-            // Play the music
-            backgroundMusic.play().then(() => {
-                musicPlaying = true;
-                currentTrackName = nextTrack;
-                debug('✅ Successfully skipped to:', nextTrack);
-                
-                // Show "Now Playing" notification
-                showNowPlayingNotification(nextTrack);
-            }).catch(e => {
-                console.error('❌ Skip failed:', e);
-                // Fallback: try the normal start function
-                startBackgroundMusic();
-            });
+            startBackgroundMusic();
         }
-    }, 300);
+    }, 500);
 }
 
 // Create placeholder sound effects using Web Audio API
