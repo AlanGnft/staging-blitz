@@ -147,6 +147,11 @@ setTimeout(() => {
     border-color: rgba(76, 175, 80, 1);
 }
 
+/* Reset hover state quickly on mobile */
+#skipBtn:not(:hover) {
+    transition: all 0.3s ease;
+}
+
 #skipBtn:active {
     transform: scale(0.95);
 }
