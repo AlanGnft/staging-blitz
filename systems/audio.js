@@ -103,7 +103,17 @@ function startBackgroundMusic() {
     }
     
     // Get the track to play (shuffle or current)
-    const trackToPlay = shuffleMode ? getNextShuffleTrack() : currentTrack;
+    let trackToPlay;
+    if (shuffleMode) {
+        // Use the current position in shuffle queue without advancing
+        if (shuffleQueue.length === 0) {
+            initializeShuffleQueue();
+        }
+        trackToPlay = shuffleQueue[currentShuffleIndex];
+        console.log('🎵 Playing from shuffle queue:', trackToPlay, 'at index:', currentShuffleIndex);
+    } else {
+        trackToPlay = currentTrack;
+    }
     
     // Create new audio element for the current track
     // Note: ../assets because we're in the systems folder
@@ -400,11 +410,9 @@ window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessibl
 window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
 
 
-// Skip to next track (for shuffle mode) - DEBUG VERSION
+// Skip to next track (for shuffle mode)
 function skipToNextTrack() {
     console.log('=== SKIP BUTTON CLICKED ===');
-    console.log('shuffleMode:', shuffleMode);
-    console.log('backgroundMusicEnabled:', backgroundMusicEnabled);
     
     if (!shuffleMode) {
         console.log('⏭️ Skip only works in shuffle mode');
@@ -419,14 +427,24 @@ function skipToNextTrack() {
     console.log('⏭️ Skipping to next track...');
     console.log('shuffleQueue before skip:', shuffleQueue);
     console.log('currentShuffleIndex before skip:', currentShuffleIndex);
-    console.log('availableTracks:', window.availableTracks);
     
     // Check if shuffle queue exists
     if (!shuffleQueue || shuffleQueue.length === 0) {
         console.log('⚠️ Shuffle queue is empty, initializing...');
         initializeShuffleQueue();
-        console.log('shuffleQueue after init:', shuffleQueue);
     }
+    
+    // Advance to next track in queue BEFORE starting music
+    currentShuffleIndex = (currentShuffleIndex + 1) % shuffleQueue.length;
+    
+    // Re-shuffle when we've played all tracks
+    if (currentShuffleIndex === 0) {
+        shuffleArray(shuffleQueue);
+        console.log('🔀 Re-shuffled queue:', shuffleQueue);
+    }
+    
+    console.log('currentShuffleIndex after skip:', currentShuffleIndex);
+    console.log('Next track will be:', shuffleQueue[currentShuffleIndex]);
     
     // Stop current music cleanly
     stopBackgroundMusic();
@@ -439,7 +457,6 @@ function skipToNextTrack() {
         }
     }, 500);
 }
-
 // Create placeholder sound effects using Web Audio API
 // (These are temporary until you create proper MP3s)
 function createPlaceholderSounds() {
