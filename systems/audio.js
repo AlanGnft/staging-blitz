@@ -96,11 +96,19 @@ function playPowerUpSound() {
 function startBackgroundMusic() {
     if (!audioInitialized || musicPlaying || !backgroundMusicEnabled) return;
     
-    // Stop existing music if any
+    // Stop any existing music first
     if (backgroundMusic) {
         backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
         backgroundMusic = null;
     }
+    
+    // Prevent multiple simultaneous calls
+    if (window.startingMusic) {
+        console.log('🎵 Already starting music, skipping...');
+        return;
+    }
+    window.startingMusic = true;
     
     // Get the track to play (shuffle or current)
     let trackToPlay;
@@ -116,12 +124,11 @@ function startBackgroundMusic() {
     }
     
     // Create new audio element for the current track
-    // Note: ../assets because we're in the systems folder
     backgroundMusic = new Audio(`assets/audio/${trackToPlay}-track.mp3`);
     
     // Set loop based on shuffle mode
     backgroundMusic.loop = !shuffleMode;
-    backgroundMusic.volume = 0.5; // Adjust as needed
+    backgroundMusic.volume = 0.5;
     
     // Add event listener for track end (for shuffle mode)
     if (shuffleMode) {
@@ -132,6 +139,7 @@ function startBackgroundMusic() {
     backgroundMusic.play().then(() => {
         musicPlaying = true;
         currentTrackName = trackToPlay;
+        window.startingMusic = false; // Clear the flag
         debug('✅ Background music started:', trackToPlay);
         
         // Show "Now Playing" notification if shuffle mode
@@ -141,9 +149,9 @@ function startBackgroundMusic() {
     }).catch(e => {
         console.log('Music play failed:', e);
         musicPlaying = false;
+        window.startingMusic = false; // Clear the flag even on error
     });
 }
-
 function stopBackgroundMusic() {
     if (!backgroundMusic || !musicPlaying) return;
     
@@ -220,13 +228,30 @@ function getNextShuffleTrack() {
 
 // Handle track end (for shuffle mode)
 function handleTrackEnd() {
-    if (!shuffleMode || trackTransitioning) return;
+    if (!shuffleMode || trackTransitioning || window.startingMusic) return;
     
     trackTransitioning = true;
-    debug('🎵 Track ended, transitioning to next...');
+    console.log('🎵 Track ended, transitioning to next...');
     
-    // Smooth transition: fade out current, start next
-    fadeOutAndSwitchTrack();
+    // Advance to next track
+    currentShuffleIndex = (currentShuffleIndex + 1) % shuffleQueue.length;
+    
+    // Re-shuffle when we've played all tracks
+    if (currentShuffleIndex === 0) {
+        shuffleArray(shuffleQueue);
+        console.log('🔀 Re-shuffled queue:', shuffleQueue);
+    }
+    
+    // Stop current track cleanly
+    stopBackgroundMusic();
+    
+    // Start next track after a delay
+    setTimeout(() => {
+        trackTransitioning = false;
+        if (shuffleMode && backgroundMusicEnabled && !gamePaused && !gameOver) {
+            startBackgroundMusic();
+        }
+    }, 100);
 }
 
 // Smooth transition between tracks
