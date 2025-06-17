@@ -3104,7 +3104,8 @@ if (shuffleBtn) {
         } else if (window.AudioSystem && window.AudioSystem.toggleShuffleMode) {
             window.AudioSystem.toggleShuffleMode();
         }
-        updateShuffleUI();
+        // Small delay to ensure state is updated
+        setTimeout(updateShuffleUI, 50);
     });
     updateShuffleUI();
 }
@@ -3169,13 +3170,28 @@ function updateJukeboxUI() {
 
 // Call this function when shuffle mode changes
 function updateShuffleUI() {
-    // Get shuffle mode from audio system
-    const currentShuffleMode = window.shuffleMode || false;
+    // Get shuffle mode from audio system (check both sources)
+    const currentShuffleMode = window.AudioSystem ? (window.AudioSystem.getShuffleMode ? window.AudioSystem.getShuffleMode() : window.shuffleMode) : false;
     
     const shuffleBtn = document.getElementById('shuffleToggleBtn');
     if (shuffleBtn) {
         shuffleBtn.textContent = currentShuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
         shuffleBtn.style.background = currentShuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+        
+        // Add hover effect styles to make it more reactive
+        shuffleBtn.style.transition = 'all 0.2s ease';
+        shuffleBtn.style.cursor = 'pointer';
+        
+        // Add active/pressed styling
+        shuffleBtn.onmousedown = () => {
+            shuffleBtn.style.transform = 'scale(0.95)';
+            shuffleBtn.style.background = currentShuffleMode ? 'rgba(0, 200, 0, 0.5)' : 'rgba(255, 255, 255, 0.2)';
+        };
+        
+        shuffleBtn.onmouseup = shuffleBtn.onmouseleave = () => {
+            shuffleBtn.style.transform = 'scale(1)';
+            shuffleBtn.style.background = currentShuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+        };
     }
     
     // Update manual selection visibility
