@@ -22,13 +22,13 @@ let audioInitialized = false;
 let musicPlaying = false;
 
 // Shuffle mode variables
-let shuffleMode = false;
+let shuffleMode = true; // Default to shuffle mode
 let shuffleQueue = [];
 let currentShuffleIndex = 0;
 let trackTransitioning = false;
 
 // Make shuffle mode accessible globally
-window.shuffleMode = false;
+window.shuffleMode = true; // Default to shuffle mode
 
 // Sound effect audio pool for better performance
 const soundPool = {
@@ -297,112 +297,97 @@ function showNowPlayingNotification(trackId) {
     const notification = document.createElement('div');
     notification.id = 'nowPlayingNotification';
     
-    if (isMobile) {
-        // Mobile: Compact scrolling ticker
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 10000;
-            width: 280px;
-            max-width: 90vw;
-            height: 32px;
-            border: 2px solid #4CAF50;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-            transition: transform 0.4s ease;
-            overflow: hidden;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
+    // Use scrolling ticker style for both mobile and desktop
+    const size = isMobile ? {
+        width: '280px',
+        maxWidth: '90vw',
+        height: '32px',
+        fontSize: '12px',
+        padding: '8px 12px',
+        borderRadius: '20px',
+        animationDuration: '5s',
+        hideDelay: 5500
+    } : {
+        width: '400px',
+        maxWidth: '80vw',
+        height: '40px',
+        fontSize: '14px',
+        padding: '10px 16px',
+        borderRadius: '25px',
+        animationDuration: '6s',
+        hideDelay: 6500
+    };
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: ${size.padding};
+        border-radius: ${size.borderRadius};
+        font-size: ${size.fontSize};
+        z-index: 10000;
+        width: ${size.width};
+        max-width: ${size.maxWidth};
+        height: ${size.height};
+        border: 2px solid #4CAF50;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        transition: transform 0.4s ease;
+        overflow: hidden;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+    `;
+    
+    // Create scrolling text
+    const scrollText = document.createElement('div');
+    scrollText.style.cssText = `
+        animation: scrollTextOnce ${size.animationDuration} linear forwards;
+        font-weight: 500;
+    `;
+    scrollText.textContent = `♪ Now Playing: ${track.name} by ${track.artist || 'Unknown Artist'}`;
+    
+    notification.appendChild(scrollText);
+    
+    // Add CSS animation for single scroll (update for both mobile and desktop)
+    if (!document.getElementById('scrollTextStyle')) {
+        const style = document.createElement('style');
+        style.id = 'scrollTextStyle';
+        style.textContent = `
+            @keyframes scrollTextOnce {
+                0% { transform: translateX(100%); }
+                15% { transform: translateX(100%); }
+                85% { transform: translateX(-100%); }
+                100% { transform: translateX(-100%); }
+            }
         `;
-        
-        // Create scrolling text
-        const scrollText = document.createElement('div');
-        scrollText.style.cssText = `
-            animation: scrollTextOnce 5s linear forwards;
-            font-weight: 500;
-        `;
-        scrollText.textContent = `♪ Now Playing: ${track.name} by ${track.artist || 'Unknown Artist'}`;
-        
-        notification.appendChild(scrollText);
-        
-        // Add CSS animation for single scroll
-        if (!document.getElementById('scrollTextStyle')) {
-            const style = document.createElement('style');
-            style.id = 'scrollTextStyle';
-            style.textContent = `
-                @keyframes scrollTextOnce {
-                    0% { transform: translateX(100%); }
-                    15% { transform: translateX(100%); }
-                    85% { transform: translateX(-100%); }
-                    100% { transform: translateX(-100%); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-    } else {
-        // Desktop: Original style but slightly smaller
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            z-index: 10000;
-            max-width: 250px;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transform: translateX(100%);
-            transition: transform 0.5s ease;
-        `;
-        
-        notification.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 2px; font-size: 11px;">♪ Now Playing</div>
-            <div style="font-size: 12px;">${track.name}</div>
-            <div style="font-size: 10px; opacity: 0.7;">by ${track.artist || 'Unknown Artist'}</div>
-        `;
+        document.head.appendChild(style);
     }
     
     document.body.appendChild(notification);
     
     // Animate in
     setTimeout(() => {
-        if (isMobile) {
-            notification.style.transform = 'translateX(-50%) translateY(0)';
-        } else {
-            notification.style.transform = 'translateX(0)';
-        }
+        notification.style.transform = 'translateX(-50%) translateY(0)';
     }, 100);
     
-    // Auto-hide after appropriate time
-    const hideDelay = isMobile ? 5500 : 4000; // Wait for scroll to complete + small buffer
+    // Auto-hide after scroll completes
     setTimeout(() => {
-        if (isMobile) {
-            notification.style.transform = 'translateX(-50%) translateY(-100%)';
-        } else {
-            notification.style.transform = 'translateX(100%)';
-        }
+        notification.style.transform = 'translateX(-50%) translateY(-100%)';
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.parentNode.removeChild(notification);
             }
         }, 500);
-    }, hideDelay);
+    }, size.hideDelay);
 }
 
 // Make shuffle functions globally accessible
 window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
 window.AudioSystem.getShuffleMode = () => shuffleMode;
+window.AudioSystem.initializeShuffleQueue = initializeShuffleQueue;
 window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessible
 
 // Create placeholder sound effects using Web Audio API
