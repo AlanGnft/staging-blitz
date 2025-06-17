@@ -325,20 +325,22 @@ function showNowPlayingNotification(trackId) {
         // Create scrolling text
         const scrollText = document.createElement('div');
         scrollText.style.cssText = `
-            animation: scrollText 4s linear infinite;
+            animation: scrollTextOnce 5s linear forwards;
             font-weight: 500;
         `;
         scrollText.textContent = `♪ Now Playing: ${track.name} by ${track.artist || 'Unknown Artist'}`;
         
         notification.appendChild(scrollText);
         
-        // Add CSS animation for scrolling
+        // Add CSS animation for single scroll
         if (!document.getElementById('scrollTextStyle')) {
             const style = document.createElement('style');
             style.id = 'scrollTextStyle';
             style.textContent = `
-                @keyframes scrollText {
+                @keyframes scrollTextOnce {
                     0% { transform: translateX(100%); }
+                    15% { transform: translateX(100%); }
+                    85% { transform: translateX(-100%); }
                     100% { transform: translateX(-100%); }
                 }
             `;
@@ -383,7 +385,7 @@ function showNowPlayingNotification(trackId) {
     }, 100);
     
     // Auto-hide after appropriate time
-    const hideDelay = isMobile ? 5000 : 4000; // Shorter since animation is smoother now
+    const hideDelay = isMobile ? 5500 : 4000; // Wait for scroll to complete + small buffer
     setTimeout(() => {
         if (isMobile) {
             notification.style.transform = 'translateX(-50%) translateY(-100%)';
