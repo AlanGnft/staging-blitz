@@ -284,49 +284,120 @@ function showNowPlayingNotification(trackId) {
     const track = availableTracks.find(t => t.id === trackId);
     if (!track) return;
     
+    // Remove any existing notification
+    const existing = document.getElementById('nowPlayingNotification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // Detect if mobile (simple check)
+    const isMobile = window.innerWidth <= 768;
+    
     // Create notification element
     const notification = document.createElement('div');
     notification.id = 'nowPlayingNotification';
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 10000;
-        max-width: 300px;
-        border-left: 4px solid #4CAF50;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        transform: translateX(100%);
-        transition: transform 0.5s ease;
-    `;
     
-    // INJECTION POINT: Update this text format when adding artist info to tracks
-    notification.innerHTML = `
-        <div style="font-weight: bold; margin-bottom: 2px;">♪ Now Playing</div>
-        <div>${track.name}</div>
-        <div style="font-size: 12px; opacity: 0.7;">by ${track.artist || 'Unknown Artist'}</div>
-    `;
+    if (isMobile) {
+        // Mobile: Compact scrolling ticker
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10000;
+            width: 280px;
+            max-width: 90vw;
+            height: 32px;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.4s ease;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        `;
+        
+        // Create scrolling text
+        const scrollText = document.createElement('div');
+        scrollText.style.cssText = `
+            animation: scrollText 6s linear infinite;
+            font-weight: 500;
+        `;
+        scrollText.textContent = `♪ Now Playing: ${track.name} by ${track.artist || 'Unknown Artist'}`;
+        
+        notification.appendChild(scrollText);
+        
+        // Add CSS animation for scrolling
+        if (!document.getElementById('scrollTextStyle')) {
+            const style = document.createElement('style');
+            style.id = 'scrollTextStyle';
+            style.textContent = `
+                @keyframes scrollText {
+                    0% { transform: translateX(100%); }
+                    10% { transform: translateX(100%); }
+                    90% { transform: translateX(-100%); }
+                    100% { transform: translateX(-100%); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+    } else {
+        // Desktop: Original style but slightly smaller
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 10000;
+            max-width: 250px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateX(100%);
+            transition: transform 0.5s ease;
+        `;
+        
+        notification.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 2px; font-size: 11px;">♪ Now Playing</div>
+            <div style="font-size: 12px;">${track.name}</div>
+            <div style="font-size: 10px; opacity: 0.7;">by ${track.artist || 'Unknown Artist'}</div>
+        `;
+    }
     
     document.body.appendChild(notification);
     
     // Animate in
     setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
+        if (isMobile) {
+            notification.style.transform = 'translateX(-50%) translateY(0)';
+        } else {
+            notification.style.transform = 'translateX(0)';
+        }
     }, 100);
     
-    // Auto-hide after 4 seconds
+    // Auto-hide after appropriate time
+    const hideDelay = isMobile ? 7000 : 4000; // Longer for mobile to see full scroll
     setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
+        if (isMobile) {
+            notification.style.transform = 'translateX(-50%) translateY(-100%)';
+        } else {
+            notification.style.transform = 'translateX(100%)';
+        }
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.parentNode.removeChild(notification);
             }
         }, 500);
-    }, 4000);
+    }, hideDelay);
 }
 
 // Make shuffle functions globally accessible
