@@ -2408,7 +2408,6 @@ let availableTracks = [
 ];
 let currentTrack = 'ambient'; // Default to ambient music
 let selectedTrack = 'ambient'; // Track selected in jukebox
-let shuffleMode = false; // Shuffle mode state
 
 // Object pools for performance optimization
 let sparklePool = [];
@@ -3063,6 +3062,14 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
 
         // Initialize jukebox system
 function initializeJukebox() {
+
+    // Ensure audio system is available
+        if (!window.AudioSystem) {
+            console.warn('Audio system not yet loaded, retrying jukebox init...');
+            setTimeout(initializeJukebox, 100);
+            return;
+        }
+
     const trackSelector = document.getElementById('trackSelector');
     const manualSelection = document.getElementById('manualTrackSelection');
     
@@ -3088,12 +3095,19 @@ function initializeJukebox() {
         });
     }
     
-    // Initialize shuffle button
-    const shuffleBtn = document.getElementById('shuffleToggleBtn');
-    if (shuffleBtn) {
-        shuffleBtn.addEventListener('click', toggleShuffleMode);
+  // Initialize shuffle button
+const shuffleBtn = document.getElementById('shuffleToggleBtn');
+if (shuffleBtn) {
+    shuffleBtn.addEventListener('click', () => {
+        if (window.toggleShuffleMode) {
+            window.toggleShuffleMode();
+        } else if (window.AudioSystem && window.AudioSystem.toggleShuffleMode) {
+            window.AudioSystem.toggleShuffleMode();
+        }
         updateShuffleUI();
-    }
+    });
+    updateShuffleUI();
+}
     
     // Show/hide manual selection based on shuffle mode
     if (manualSelection) {
@@ -3155,16 +3169,19 @@ function updateJukeboxUI() {
 
 // Call this function when shuffle mode changes
 function updateShuffleUI() {
+    // Get shuffle mode from audio system
+    const currentShuffleMode = window.shuffleMode || false;
+    
     const shuffleBtn = document.getElementById('shuffleToggleBtn');
     if (shuffleBtn) {
-        shuffleBtn.textContent = shuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
-        shuffleBtn.style.background = shuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+        shuffleBtn.textContent = currentShuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
+        shuffleBtn.style.background = currentShuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
     }
     
     // Update manual selection visibility
     const manualSelection = document.getElementById('manualTrackSelection');
     if (manualSelection) {
-        manualSelection.style.display = shuffleMode ? 'none' : 'block';
+        manualSelection.style.display = currentShuffleMode ? 'none' : 'block';
     }
 }
         
