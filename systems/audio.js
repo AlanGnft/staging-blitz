@@ -401,14 +401,6 @@ function showNowPlayingNotification(trackId) {
     }, size.hideDelay);
 }
 
-// Make shuffle functions globally accessible
-window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
-window.AudioSystem.getShuffleMode = () => shuffleMode;
-window.AudioSystem.initializeShuffleQueue = initializeShuffleQueue;
-window.AudioSystem.skipToNextTrack = skipToNextTrack;
-window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessible
-window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
-
 
 // Skip to next track (for shuffle mode)
 function skipToNextTrack() {
@@ -457,6 +449,15 @@ function skipToNextTrack() {
         }
     }, 500);
 }
+
+// Make shuffle functions globally accessible
+window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
+window.AudioSystem.getShuffleMode = () => shuffleMode;
+window.AudioSystem.initializeShuffleQueue = initializeShuffleQueue;
+window.AudioSystem.skipToNextTrack = skipToNextTrack;
+window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessible
+window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
+
 // Create placeholder sound effects using Web Audio API
 // (These are temporary until you create proper MP3s)
 function createPlaceholderSounds() {
