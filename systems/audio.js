@@ -400,8 +400,12 @@ window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessibl
 window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
 
 
-// Skip to next track (for shuffle mode) - SIMPLIFIED VERSION
+// Skip to next track (for shuffle mode) - DEBUG VERSION
 function skipToNextTrack() {
+    console.log('=== SKIP BUTTON CLICKED ===');
+    console.log('shuffleMode:', shuffleMode);
+    console.log('backgroundMusicEnabled:', backgroundMusicEnabled);
+    
     if (!shuffleMode) {
         console.log('⏭️ Skip only works in shuffle mode');
         return;
@@ -413,13 +417,23 @@ function skipToNextTrack() {
     }
     
     console.log('⏭️ Skipping to next track...');
+    console.log('shuffleQueue before skip:', shuffleQueue);
+    console.log('currentShuffleIndex before skip:', currentShuffleIndex);
+    console.log('availableTracks:', window.availableTracks);
+    
+    // Check if shuffle queue exists
+    if (!shuffleQueue || shuffleQueue.length === 0) {
+        console.log('⚠️ Shuffle queue is empty, initializing...');
+        initializeShuffleQueue();
+        console.log('shuffleQueue after init:', shuffleQueue);
+    }
     
     // Stop current music cleanly
     stopBackgroundMusic();
     
     // Wait a moment then start next track
     setTimeout(() => {
-        // Only start music if game conditions are right
+        console.log('Starting next track...');
         if (backgroundMusicEnabled && gameStarted && !gameOver && !gamePaused) {
             startBackgroundMusic();
         }
@@ -463,7 +477,7 @@ function createPlaceholderSounds() {
     window.playCrashSound = () => {
         if (!audioInitialized || !soundEffectsEnabled) return;
         createBeep(150, 0.3, 'sawtooth');
-    };
+    };s
     
     window.playPowerUpSound = () => {
         if (!audioInitialized || !soundEffectsEnabled) return;
