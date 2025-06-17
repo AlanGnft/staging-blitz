@@ -167,14 +167,10 @@ function stopBackgroundMusic() {
 }
 
 function updateBackgroundMusic() {
-    // Temporarily disabled to debug the loop issue
-    console.log('updateBackgroundMusic called - temporarily disabled');
-    return;
-    
     if (!backgroundMusic || !musicPlaying) return;
     
-    // Check if track changed
-    if (currentTrack !== currentTrackName) {
+    // Only check for track changes in non-shuffle mode
+    if (!shuffleMode && currentTrack !== currentTrackName) {
         currentTrackName = currentTrack;
         stopBackgroundMusic();
         startBackgroundMusic();
@@ -182,10 +178,12 @@ function updateBackgroundMusic() {
     }
     
     // Adjust volume based on game speed (optional)
-    const speedProgress = Math.min(currentSpeedLevel / 4, 1);
-    const baseVolume = 0.5;
-    const maxVolume = 0.7;
-    backgroundMusic.volume = baseVolume + (speedProgress * (maxVolume - baseVolume));
+    if (backgroundMusic && typeof currentSpeedLevel !== 'undefined') {
+        const speedProgress = Math.min(currentSpeedLevel / 4, 1);
+        const baseVolume = 0.5;
+        const maxVolume = 0.7;
+        backgroundMusic.volume = baseVolume + (speedProgress * (maxVolume - baseVolume));
+    }
 }
 
 // ==================== SHUFFLE MODE FUNCTIONS ====================
