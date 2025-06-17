@@ -1015,33 +1015,6 @@ setTimeout(() => {
     }
 }
 
-#touchArea {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-/* Safari iOS Touch Fixes */
-body, html {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-canvas {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-}
-
-/* Prevent Safari zoom on double-tap */
-* {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-}
-
     </style>
 </head>
 <body>
@@ -1776,12 +1749,19 @@ canvas {
 <div class="settings-section">
     <h3>🎵 Jukebox</h3>
     <p style="color: white; font-size: 14px; margin-bottom: 15px; opacity: 0.8;">Choose your soundtrack for the ultimate running experience!</p>
-    <div id="jukeboxTracks">
-        <!-- Track options will be populated by JavaScript -->
+    
+    <!-- Shuffle Mode Toggle -->
+    <div style="margin-bottom: 15px;">
+        <button id="shuffleToggleBtn" class="game-button" style="padding: 8px 16px; font-size: 16px; width: 100%;">🔀 Shuffle: OFF</button>
     </div>
-    <div style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
-        <button id="previewTrackBtn" class="game-button" style="padding: 8px 16px; font-size: 16px; margin-right: 10px;">🎧 Preview</button>
-        <button id="applyTrackBtn" class="game-button" style="padding: 8px 16px; font-size: 16px;">✅ Apply Track</button>
+    
+    <!-- Track Selection (only shown when shuffle is off) -->
+    <div id="manualTrackSelection">
+        <label for="trackSelector" style="color: white; font-size: 14px; display: block; margin-bottom: 8px;">Select Track:</label>
+        <select id="trackSelector" class="game-button" style="width: 100%; padding: 10px; font-size: 16px; margin-bottom: 15px;">
+            <!-- Options will be populated by JavaScript -->
+        </select>
+        <button id="applyTrackBtn" class="game-button" style="padding: 8px 16px; font-size: 16px; width: 100%;">✅ Apply Track</button>
     </div>
 </div>
     
@@ -2419,13 +2399,16 @@ let soundEffectsEnabled = true;
 let backgroundMusicEnabled = true;
 
 // Jukebox system variables
+// INJECTION POINT: Add new tracks here in this format:
+// { id: 'filename-without-extension', name: 'Display Name', description: 'Short description', artist: 'Artist Name (optional)' }
 let availableTracks = [
-    { id: 'medieval', name: 'The Throne', description: 'Epic fantasy adventure music' },
-    { id: 'electronic', name: 'Cybershock', description: 'Futuristic electronic beats' },
-    { id: 'ambient', name: 'Field of Memories', description: 'Dreamy ethereal lofi vibes' }
+    { id: 'medieval', name: 'The Throne', description: 'Epic fantasy adventure music', artist: 'Game Composer' },
+    { id: 'electronic', name: 'Cybershock', description: 'Futuristic electronic beats', artist: 'Synth Master' },
+    { id: 'ambient', name: 'Field of Memories', description: 'Dreamy ethereal lofi vibes', artist: 'Chill Producer' }
 ];
 let currentTrack = 'ambient'; // Default to ambient music
 let selectedTrack = 'ambient'; // Track selected in jukebox
+let shuffleMode = false; // Shuffle mode state
 
 // Object pools for performance optimization
 let sparklePool = [];
@@ -2810,153 +2793,62 @@ function updateSpeedIndicator() {
 // Functions: setupMobileControls(), handleTouch(), etc.
 
         
-// Setup mobile touch controls with swipe gestures
-function setupMobileControls() {
-    alert('Mobile controls setup starting...'); // This should show on Safari
-    
-    const touchArea = document.getElementById('touchArea');
-    
-    if (!touchArea) {
-        alert('TouchArea not found - using body');
-        // Use document.body as fallback
-        document.body.addEventListener('touchstart', function(e) {
-            alert('Body touch detected!');
-            handleTouchStart(e);
-        });
-        
-        document.body.addEventListener('touchend', function(e) {
-            handleTouchEnd(e);
-        });
-        return;
-    }
-    
-    alert('TouchArea found - adding listeners');
-    
-    // Simple direct event binding
-    touchArea.ontouchstart = function(e) {
-        alert('Touch start!');
-        handleTouchStart(e);
-    };
-    
-    touchArea.ontouchend = function(e) {
-        alert('Touch end!');
-        handleTouchEnd(e);
-    };
-    
-    // Also try click as fallback
-    touchArea.onclick = function(e) {
-        alert('Click detected!');
-        if (!jumping) {
-            jump();
+        // Setup mobile touch controls with swipe gestures
+        function setupMobileControls() {
+            const touchArea = document.getElementById('touchArea');
+            
+            // Simplified swipe detection to prevent freezing
+            let lastTouchY = 0;
+            
+            touchArea.addEventListener('touchstart', function(e) {
+                if (!gameStarted || gameOver || gamePaused) return;
+                
+                e.preventDefault();
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                lastTouchY = touchStartY;
+                touchStartTime = Date.now();
+            });
+            
+            touchArea.addEventListener('touchend', function(e) {
+                if (!gameStarted || gameOver || gamePaused) return;
+                
+                e.preventDefault();
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const touchTime = Date.now() - touchStartTime;
+                
+                // Simple, reliable swipe detection
+                if (touchTime < 300) { // Short swipe = faster response
+                    const deltaX = touchEndX - touchStartX;
+                    const deltaY = touchStartY - touchEndY; // Note: reversed for Y
+                    
+                    // Simple thresholds
+                    const minSwipeDistance = 30;
+                    
+                    // Determine primary direction of swipe
+                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                        // Horizontal swipe
+                        if (deltaX > 0) {
+                            moveRight();
+                        } else {
+                            moveLeft();
+                        }
+                    } 
+                    else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+                        // Vertical swipe
+                        if (deltaY > 0 && !jumping) {
+                            // Swipe up to jump (only if not already jumping)
+                            jump();
+                        } else if (deltaY < 0) {
+                            // Swipe down to quick drop
+                            quickDrop();
+                        }
+                    }
+                }
+            });
         }
-    };
-}
-
-function handleTouchStart(e) {
-    if (!gameStarted || gameOver || gamePaused) return;
-    
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchStartTime = Date.now();
-}
-
-function handleTouchEnd(e) {
-    if (!gameStarted || gameOver || gamePaused) return;
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const touchTime = Date.now() - touchStartTime;
-    
-    if (touchTime < 300) {
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchStartY - touchEndY;
         
-        if (Math.abs(deltaX) > 30) {
-            if (deltaX > 0) {
-                moveRight();
-            } else {
-                moveLeft();
-            }
-        } else if (Math.abs(deltaY) > 30) {
-            if (deltaY > 0 && !jumping) {
-                jump();
-            } else if (deltaY < 0) {
-                quickDrop();
-            }
-        }
-    }
-}
-
-
-// Fallback function if touchArea doesn't exist
-function setupBodyTouchControls() {
-    showDebugMessage('Setting up body touch controls as fallback...');
-    
-    document.body.addEventListener('touchstart', function(e) {
-        showDebugMessage('Body touch start detected');
-        handleTouchStart(e);
-    }, { passive: false });
-    
-    document.body.addEventListener('touchend', function(e) {
-        showDebugMessage('Body touch end detected');
-        handleTouchEnd(e);
-    }, { passive: false });
-}
-
-function handleTouchStart(e) {
-    showDebugMessage('handleTouchStart called');
-    if (!gameStarted || gameOver || gamePaused) {
-        showDebugMessage('Game not ready for input');
-        return;
-    }
-    
-    if (e.preventDefault) e.preventDefault();
-    
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchStartTime = Date.now();
-    
-    showDebugMessage(`Touch recorded: ${touchStartX}, ${touchStartY}`);
-}
-
-function handleTouchEnd(e) {
-    showDebugMessage('handleTouchEnd called');
-    if (!gameStarted || gameOver || gamePaused) return;
-    
-    if (e.preventDefault) e.preventDefault();
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const touchTime = Date.now() - touchStartTime;
-    
-    showDebugMessage(`Touch end: ${touchEndX}, ${touchEndY}, time: ${touchTime}ms`);
-    
-    if (touchTime < 300) {
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchStartY - touchEndY;
-        
-        const minSwipeDistance = 30;
-        
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-            showDebugMessage(`Horizontal swipe: ${deltaX > 0 ? 'right' : 'left'}`);
-            if (deltaX > 0) {
-                moveRight();
-            } else {
-                moveLeft();
-            }
-        } 
-        else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
-            showDebugMessage(`Vertical swipe: ${deltaY > 0 ? 'up' : 'down'}`);
-            if (deltaY > 0 && !jumping) {
-                jump();
-            } else if (deltaY < 0) {
-                quickDrop();
-            }
-        }
-    }
-}
-
-
 // ==================== GAME INITIALIZATION ====================
 // Core game setup and initialization functions
 // Dependencies: THREE.js, Audio System, Object Pools
@@ -2969,12 +2861,6 @@ function handleTouchEnd(e) {
 
 // Initialize audio system
     initializeAudio();
-
-    // Safari iPad Touch Fix
-if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-    document.addEventListener('touchstart', function() {}, { passive: false });
-    document.addEventListener('touchmove', function() {}, { passive: false });
-}
 
 // Background music system
 let backgroundMusic = null;
@@ -3177,310 +3063,59 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
 
         // Initialize jukebox system
 function initializeJukebox() {
-    const jukeboxContainer = document.getElementById('jukeboxTracks');
+    const trackSelector = document.getElementById('trackSelector');
+    const manualSelection = document.getElementById('manualTrackSelection');
     
-    // Clear existing tracks
-    jukeboxContainer.innerHTML = '';
+    // Clear and populate track selector
+    if (trackSelector) {
+        trackSelector.innerHTML = '';
+        
+        // INJECTION POINT: availableTracks array will automatically populate this dropdown
+        availableTracks.forEach(track => {
+            const option = document.createElement('option');
+            option.value = track.id;
+            option.textContent = `${track.name} - ${track.description}`;
+            if (track.id === selectedTrack) {
+                option.selected = true;
+            }
+            trackSelector.appendChild(option);
+        });
+        
+        // Add change listener
+        trackSelector.addEventListener('change', (e) => {
+            selectedTrack = e.target.value;
+            debug(`🎵 Selected track: ${selectedTrack}`);
+        });
+    }
     
-    // Create track options
-    availableTracks.forEach(track => {
-        const trackElement = document.createElement('div');
-        trackElement.className = 'track-option';
-        trackElement.dataset.trackId = track.id;
-        
-        // Add selected class if this is the current track
-        if (track.id === selectedTrack) {
-            trackElement.classList.add('selected');
-        }
-        
-        // Set track icon based on type
-        let trackIcon = '🎵';
-        if (track.id === 'medieval') trackIcon = '⚔️';
-        else if (track.id === 'electronic') trackIcon = '🌈';
-        else if (track.id === 'ambient') trackIcon = '🌌';
-        
-        trackElement.innerHTML = `
-            <div class="track-icon">${trackIcon}</div>
-            <div class="track-info">
-                <div class="track-name">${track.name}</div>
-                <div class="track-description">${track.description}</div>
-            </div>
-            <div class="track-status ${track.id === currentTrack ? 'track-playing' : (track.id === selectedTrack ? 'track-selected' : '')}" id="status-${track.id}">
-                ${track.id === currentTrack ? 'Playing' : (track.id === selectedTrack ? 'Selected' : '')}
-            </div>
-        `;
-        
-        // Add click listener
-        trackElement.addEventListener('click', () => selectTrack(track.id));
-        
-        jukeboxContainer.appendChild(trackElement);
-    });
+    // Initialize shuffle button
+    const shuffleBtn = document.getElementById('shuffleToggleBtn');
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', toggleShuffleMode);
+        updateShuffleUI();
+    }
     
-    // Add button listeners
-    document.getElementById('previewTrackBtn').addEventListener('click', previewSelectedTrack);
-    document.getElementById('applyTrackBtn').addEventListener('click', applySelectedTrack);
+    // Show/hide manual selection based on shuffle mode
+    if (manualSelection) {
+        manualSelection.style.display = shuffleMode ? 'none' : 'block';
+    }
+    
+    // Add apply button listener
+    const applyBtn = document.getElementById('applyTrackBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', applySelectedTrack);
+    }
     
     debug('🎵 Jukebox system initialized!');
 }
 
-// Select a track in the jukebox
-function selectTrack(trackId) {
-    selectedTrack = trackId;
-    
-    // Update UI
-    document.querySelectorAll('.track-option').forEach(option => {
-        option.classList.remove('selected');
-        const status = option.querySelector('.track-status');
-        if (option.dataset.trackId === currentTrack) {
-            status.textContent = 'Playing';
-            status.className = 'track-status track-playing';
-        } else if (option.dataset.trackId === selectedTrack) {
-            status.textContent = 'Selected';
-            status.className = 'track-status track-selected';
-        } else {
-            status.textContent = '';
-            status.className = 'track-status';
-        }
-    });
-    
-    // Add selected class to clicked track
-    document.querySelector(`[data-track-id="${trackId}"]`).classList.add('selected');
-    
-    debug(`🎵 Selected track: ${trackId}`);
-}
-
-// Preview the selected track
-// Preview the selected track
-function previewSelectedTrack() {
-    debug(`🎧 Previewing track: ${selectedTrack}`);
-    
-    // Stop any existing preview
-    if (window.previewMusic && window.previewMusic.playing) {
-        stopPreview();
-    }
-    
-    // Don't preview if it's already the current track
-    if (selectedTrack === currentTrack && musicPlaying) {
-        debug('🎵 Track already playing - no preview needed!');
-        alert(`🎵 "${availableTracks.find(t => t.id === selectedTrack)?.name}" is already playing!`);
-        return;
-    }
-    
-    // Create and start preview
-    startPreview(selectedTrack);
-    
-    // Update button text to show preview is playing
-    const previewBtn = document.getElementById('previewTrackBtn');
-    previewBtn.textContent = '⏹️ Stop Preview';
-    previewBtn.onclick = stopPreview;
-    
-    // Auto-stop preview after 15 seconds
-    if (window.previewTimeout) {
-        clearTimeout(window.previewTimeout);
-    }
-    window.previewTimeout = setTimeout(() => {
-        stopPreview();
-    }, 15000); // 15 second preview
-}
-
-// Start preview of a specific track
-function startPreview(trackId) {
-    if (!audioInitialized) {
-        alert('🔇 Audio not ready yet! Try clicking the start button first.');
-        return;
-    }
-    
-    try {
-        debug(`🎧 Starting preview of: ${trackId}`);
-        
-        // Create preview music layers
-        window.previewMusic = {
-            layers: [],
-            playing: true,
-            trackId: trackId
-        };
-        
-        // Create preview music based on track
-        if (trackId === 'medieval') {
-            createPreviewMedieval();
-        } else if (trackId === 'electronic') {
-            createPreviewElectronic();
-        } else if (trackId === 'ambient') {
-            createPreviewAmbient();
-        }
-        
-        // Start all preview patterns
-        window.previewMusic.layers.forEach(layer => {
-            if (layer.pattern) {
-                layer.pattern.start(0);
-            }
-        });
-        
-        // Start transport if not already running
-        if (Tone.Transport.state !== 'started') {
-            Tone.Transport.start();
-        }
-        
-        debug(`✅ Preview started for: ${availableTracks.find(t => t.id === trackId)?.name}`);
-        
-    } catch (error) {
-        console.error('❌ Error starting preview:', error);
-        alert('❌ Error starting preview! Check console for details.');
-    }
-}
-
-// Stop preview
-function stopPreview() {
-    debug('🛑 Stopping preview...');
-    
-    if (window.previewMusic && window.previewMusic.layers) {
-        // Stop and dispose all preview patterns
-        window.previewMusic.layers.forEach(layer => {
-            if (layer.pattern) {
-                layer.pattern.stop();
-                layer.pattern.dispose();
-            }
-            if (layer.synth && layer.synth.dispose) {
-                layer.synth.dispose();
-            }
-        });
-        
-        window.previewMusic = null;
-    }
-    
-    // Clear timeout
-    if (window.previewTimeout) {
-        clearTimeout(window.previewTimeout);
-        window.previewTimeout = null;
-    }
-    
-    // Reset button
-    const previewBtn = document.getElementById('previewTrackBtn');
-    previewBtn.textContent = '🎧 Preview';
-    previewBtn.onclick = previewSelectedTrack;
-    
-    debug('✅ Preview stopped');
-}
-
-// Preview versions of each track (shorter, simpler versions)
-function createPreviewMedieval() {
-    debug('🎧 Creating medieval preview...');
-    
-    // Just drums and lute for preview
-    const drumSynth = new Tone.MembraneSynth({
-        pitchDecay: 0.08,
-        octaves: 12,
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.01, decay: 0.6, sustain: 0.1, release: 2.0 }
-    }).toDestination();
-    
-    const drumPattern = new Tone.Pattern((time, note) => {
-        drumSynth.triggerAttackRelease(note, "4n", time);
-    }, ["C1", "C1", "G1", "C1"], "up");
-    
-    drumPattern.interval = "2n";
-    drumSynth.volume.value = -10;
-    
-    const luteSynth = new Tone.Synth({
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.02, decay: 0.4, sustain: 0.3, release: 0.8 }
-    }).toDestination();
-    
-    const lutePattern = new Tone.Pattern((time, note) => {
-        luteSynth.triggerAttackRelease(note, "8n", time);
-    }, ["D3", "F3", "A3", "D4"], "up");
-    
-    lutePattern.interval = "4n";
-    luteSynth.volume.value = -12;
-    
-    window.previewMusic.layers = [
-        { name: "drums", pattern: drumPattern, synth: drumSynth },
-        { name: "lute", pattern: lutePattern, synth: luteSynth }
-    ];
-}
-
-function createPreviewElectronic() {
-    debug('🎧 Creating electronic preview...');
-    
-    // Kick and lead synth for preview
-    const kickSynth = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 10,
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
-    }).toDestination();
-    
-    const kickPattern = new Tone.Pattern((time, note) => {
-        kickSynth.triggerAttackRelease(note, "8n", time);
-    }, ["C1", "C1", "C1", "C1"], "up");
-    
-    kickPattern.interval = "4n";
-    kickSynth.volume.value = -8;
-    
-    const leadSynth = new Tone.Synth({
-        oscillator: { type: "square" },
-        envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 1.0 }
-    }).toDestination();
-    
-    const leadPattern = new Tone.Pattern((time, note) => {
-        leadSynth.triggerAttackRelease(note, "8n", time);
-    }, ["A4", "C5", "E5", "G5"], "up");
-    
-    leadPattern.interval = "8n";
-    leadSynth.volume.value = -10;
-    
-    // Set faster tempo for electronic music
-    Tone.Transport.bpm.value = 128;
-    
-    window.previewMusic.layers = [
-        { name: "kick", pattern: kickPattern, synth: kickSynth },
-        { name: "lead", pattern: leadPattern, synth: leadSynth }
-    ];
-}
-
-function createPreviewAmbient() {
-    debug('🎧 Creating ambient preview...');
-    
-    // Drone and bells for preview
-    const droneSynth = new Tone.Synth({
-        oscillator: { type: "sine" },
-        envelope: { attack: 2.0, decay: 1.0, sustain: 0.8, release: 3.0 }
-    }).toDestination();
-    
-    const dronePattern = new Tone.Pattern((time, note) => {
-        droneSynth.triggerAttackRelease(note, "2n", time);
-    }, ["C2", "G2"], "up");
-    
-    dronePattern.interval = "1n";
-    droneSynth.volume.value = -8;
-    
-    const bellSynth = new Tone.MetalSynth({
-        frequency: 200,
-        envelope: { attack: 0.001, decay: 1.0, release: 2.0 },
-        harmonicity: 5.1,
-        modulationIndex: 32,
-        resonance: 4000,
-        octaves: 1.5
-    }).toDestination();
-    
-    const bellPattern = new Tone.Pattern((time, note) => {
-        bellSynth.triggerAttackRelease(note, "4n", time);
-    }, ["C4", "E4", "G4", "C5"], "up");
-    
-    bellPattern.interval = "2n";
-    bellSynth.volume.value = -12;
-    
-    // Set slower tempo for ambient music
-    Tone.Transport.bpm.value = 60;
-    
-    window.previewMusic.layers = [
-        { name: "drone", pattern: dronePattern, synth: droneSynth },
-        { name: "bells", pattern: bellPattern, synth: bellSynth }
-    ];
-}
-
 // Apply the selected track
 function applySelectedTrack() {
+    if (shuffleMode) {
+        debug('🔀 In shuffle mode - tracks change automatically');
+        return;
+    }
+    
     if (selectedTrack === currentTrack) {
         debug('🎵 Track already playing!');
         return;
@@ -3496,20 +3131,41 @@ function applySelectedTrack() {
     // Update current track
     currentTrack = selectedTrack;
     
-    // Track will be loaded automatically when startBackgroundMusic is called
-    
     // Start new music if game is playing and music is enabled
     if (gameStarted && !gameOver && !gamePaused && backgroundMusicEnabled) {
         startBackgroundMusic();
     }
     
-    // Update UI
-    initializeJukebox();
-    
     // Save preference
-    saveGameData('settings_change');
+    if (typeof saveGameData === 'function') {
+        saveGameData('settings_change');
+    }
     
     debug(`✅ Successfully switched to: ${availableTracks.find(t => t.id === currentTrack)?.name}`);
+}
+
+// Update jukebox UI when shuffle mode changes
+function updateJukeboxUI() {
+    const manualSelection = document.getElementById('manualTrackSelection');
+    if (manualSelection) {
+        manualSelection.style.display = shuffleMode ? 'none' : 'block';
+    }
+    updateShuffleUI();
+}
+
+// Call this function when shuffle mode changes
+function updateShuffleUI() {
+    const shuffleBtn = document.getElementById('shuffleToggleBtn');
+    if (shuffleBtn) {
+        shuffleBtn.textContent = shuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
+        shuffleBtn.style.background = shuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+    }
+    
+    // Update manual selection visibility
+    const manualSelection = document.getElementById('manualTrackSelection');
+    if (manualSelection) {
+        manualSelection.style.display = shuffleMode ? 'none' : 'block';
+    }
 }
         
 // Leaderboard functions - Updated with data preservation
@@ -13192,35 +12848,6 @@ window.addEventListener('blur', function() {
 
 // Start auto-save when game starts
 startAutoSave();
-
-
-// Debug function to show messages on screen for iPad testing
-function showDebugMessage(message) {
-    const debugDiv = document.getElementById('safariDebug') || createDebugDiv();
-    debugDiv.innerHTML += message + '<br>';
-    debugDiv.scrollTop = debugDiv.scrollHeight;
-}
-
-function createDebugDiv() {
-    const debugDiv = document.createElement('div');
-    debugDiv.id = 'safariDebug';
-    debugDiv.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        width: 300px;
-        height: 200px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        font-size: 12px;
-        padding: 10px;
-        z-index: 9999;
-        overflow-y: scroll;
-        border: 1px solid white;
-    `;
-    document.body.appendChild(debugDiv);
-    return debugDiv;
-}
     </script>
 
     <script>
