@@ -397,6 +397,32 @@ window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
 function skipToNextTrack() {
     if (!shuffleMode) {
         debug('⏭️ Skip only works in shuffle mode');
+        // Show a brief message for non-shuffle mode
+        if (typeof showNowPlayingNotification === 'function') {
+            // Create a temporary notification
+            const tempNotification = document.createElement('div');
+            tempNotification.style.cssText = `
+                position: fixed;
+                top: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(255, 0, 0, 0.9);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                z-index: 10001;
+                border: 2px solid #ff4444;
+            `;
+            tempNotification.textContent = '⏭️ Skip only works in Shuffle mode';
+            document.body.appendChild(tempNotification);
+            
+            setTimeout(() => {
+                if (tempNotification.parentNode) {
+                    tempNotification.remove();
+                }
+            }, 2000);
+        }
         return;
     }
     
@@ -407,15 +433,49 @@ function skipToNextTrack() {
     
     debug('⏭️ Skipping to next track...');
     
-    // Stop current track
-    stopBackgroundMusic();
+    // Get next track before stopping current one
+    const nextTrack = getNextShuffleTrack();
+    debug('⏭️ Next track will be:', nextTrack);
     
-    // Start next track after a brief pause
+    // Stop current track smoothly
+    if (backgroundMusic) {
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+        backgroundMusic = null;
+    }
+    musicPlaying = false;
+    
+    // Start next track immediately
     setTimeout(() => {
         if (backgroundMusicEnabled && !gamePaused && !gameOver) {
-            startBackgroundMusic();
+            // Create new audio element for the next track
+            backgroundMusic = new Audio(`assets/audio/${nextTrack}-track.mp3`);
+            backgroundMusic.loop = false; // Don't loop in shuffle mode
+            backgroundMusic.volume = 0.5;
+            
+            // Add event listener for track end
+            backgroundMusic.addEventListener('ended', handleTrackEnd);
+            
+            // Play the music
+            backgroundMusic.play().then(() => {
+                musicPlaying = true;
+                currentTrackName = nextTrack;
+                debug('✅ Skipped to:', nextTrack);
+                
+                // Show "Now Playing" notification
+                showNowPlayingNotification(nextTrack);
+            }).catch(e => {
+                console.error('❌ Skip failed:', e);
+                debug('❌ Skip failed, trying to restart current track');
+                // Fallback: restart the audio system
+                setTimeout(() => {
+                    if (backgroundMusicEnabled) {
+                        startBackgroundMusic();
+                    }
+                }, 500);
+            });
         }
-    }, 300);
+    }, 100);
 }
 
 // Create placeholder sound effects using Web Audio API
