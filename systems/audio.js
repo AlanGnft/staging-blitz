@@ -272,6 +272,9 @@ function updateShuffleUI() {
     if (shuffleBtn) {
         shuffleBtn.textContent = shuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
         shuffleBtn.style.background = shuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+        
+        // Update global variable to keep everything in sync
+        window.shuffleMode = shuffleMode;
     }
 }
 
@@ -305,7 +308,7 @@ function showNowPlayingNotification(trackId) {
     notification.innerHTML = `
         <div style="font-weight: bold; margin-bottom: 2px;">♪ Now Playing</div>
         <div>${track.name}</div>
-        <div style="font-size: 12px; opacity: 0.7;">${track.description}</div>
+        <div style="font-size: 12px; opacity: 0.7;">by ${track.artist || 'Unknown Artist'}</div>
     `;
     
     document.body.appendChild(notification);
