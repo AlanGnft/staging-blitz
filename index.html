@@ -2399,10 +2399,10 @@ let soundEffectsEnabled = true;
 let backgroundMusicEnabled = true;
 
 // Jukebox system variables
-// INJECTION POINT: Add new tracks here in this format:
+// TRACK INJECTION POINT: Add new tracks here in this format:
 // { id: 'filename-without-extension', name: 'Display Name', description: 'Short description', artist: 'Artist Name (optional)' }
 let availableTracks = [
-    { id: 'medieval', name: 'The Throne', description: 'Epic fantasy adventure music', artist: 'Game Composer' },
+    { id: 'lofi', name: 'Coffee Shop', description: 'Chill lofi beats', artist: 'Game Composer' },
     { id: 'electronic', name: 'Cybershock', description: 'Futuristic electronic beats', artist: 'Synth Master' },
     { id: 'ambient', name: 'Field of Memories', description: 'Dreamy ethereal lofi vibes', artist: 'Chill Producer' }
 ];
@@ -3034,9 +3034,23 @@ document.getElementById('backgroundMusicCheckbox').addEventListener('change', fu
 // Functions: setupSettingsUI(), updateCharactersInSettings(), toggleSettings(), etc.
 
         // Setup settings UI
-        function setupSettingsUI() {
+function setupSettingsUI() {
     // Initialize jukebox
     initializeJukebox();
+    
+    // Initialize shuffle mode by default (wait a bit for audio system to load)
+    setTimeout(() => {
+        if (window.AudioSystem) {
+            // Initialize shuffle queue since we're starting in shuffle mode
+            if (window.AudioSystem.toggleShuffleMode) {
+                // Shuffle is already true by default, just need to initialize the queue
+                if (window.shuffleMode && typeof initializeShuffleQueue === 'function') {
+                    // The function is in audio.js, so call it through the audio system
+                    window.AudioSystem.initializeShuffleQueue?.();
+                }
+            }
+        }
+    }, 100);
 
     // Update mod mode UI based on CURRENT state
     if (modModeEnabled) {
