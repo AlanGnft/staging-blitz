@@ -167,6 +167,15 @@ function stopBackgroundMusic() {
 }
 
 function updateBackgroundMusic() {
+    // Add tracing to see what's calling this function hundreds of times
+    if (!window.updateMusicCallCount) window.updateMusicCallCount = 0;
+    window.updateMusicCallCount++;
+    
+    // Only log every 100th call to avoid spam
+    if (window.updateMusicCallCount % 100 === 0) {
+        console.trace('updateBackgroundMusic called 100 times, most recent call from:');
+    }
+    
     if (!backgroundMusic || !musicPlaying) return;
     
     // Only check for track changes in non-shuffle mode
