@@ -397,58 +397,46 @@ window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
 function skipToNextTrack() {
     if (!shuffleMode) {
         debug('⏭️ Skip only works in shuffle mode');
-        // Show a brief message for non-shuffle mode
-        if (typeof showNowPlayingNotification === 'function') {
-            // Create a temporary notification
-            const tempNotification = document.createElement('div');
-            tempNotification.style.cssText = `
-                position: fixed;
-                top: 70px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(255, 0, 0, 0.9);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 12px;
-                z-index: 10001;
-                border: 2px solid #ff4444;
-            `;
-            tempNotification.textContent = '⏭️ Skip only works in Shuffle mode';
-            document.body.appendChild(tempNotification);
-            
-            setTimeout(() => {
-                if (tempNotification.parentNode) {
-                    tempNotification.remove();
-                }
-            }, 2000);
-        }
         return;
     }
     
-    if (!musicPlaying || !backgroundMusic) {
-        debug('⏭️ No music playing to skip');
+    if (!backgroundMusicEnabled) {
+        debug('⏭️ Background music is disabled');
         return;
     }
     
     debug('⏭️ Skipping to next track...');
+    debug('⏭️ Current shuffle index before skip:', currentShuffleIndex);
+    debug('⏭️ Current shuffle queue:', shuffleQueue);
     
-    // Get next track before stopping current one
-    const nextTrack = getNextShuffleTrack();
-    debug('⏭️ Next track will be:', nextTrack);
+    // Stop current music cleanly
+    stopBackgroundMusic();
     
-    // Stop current track smoothly
-    if (backgroundMusic) {
-        backgroundMusic.pause();
-        backgroundMusic.currentTime = 0;
-        backgroundMusic = null;
+    // IMPORTANT: Force advance to next track in shuffle queue
+    // Don't just call startBackgroundMusic() which might replay the same track
+    
+    // Get the next track manually
+    if (shuffleQueue.length === 0) {
+        initializeShuffleQueue();
     }
-    musicPlaying = false;
     
-    // Start next track immediately
+    // Advance to next track in queue
+    const nextTrack = shuffleQueue[currentShuffleIndex];
+    currentShuffleIndex = (currentShuffleIndex + 1) % shuffleQueue.length;
+    
+    // Re-shuffle when we've played all tracks
+    if (currentShuffleIndex === 0) {
+        shuffleArray(shuffleQueue);
+        debug('🔀 Re-shuffled queue:', shuffleQueue);
+    }
+    
+    debug('⏭️ Next track will be:', nextTrack);
+    debug('⏭️ New shuffle index:', currentShuffleIndex);
+    
+    // Wait a moment then start the specific next track
     setTimeout(() => {
-        if (backgroundMusicEnabled && !gamePaused && !gameOver) {
-            // Create new audio element for the next track
+        if (backgroundMusicEnabled && gameStarted && !gameOver && !gamePaused) {
+            // Create new audio element for the specific next track
             backgroundMusic = new Audio(`assets/audio/${nextTrack}-track.mp3`);
             backgroundMusic.loop = false; // Don't loop in shuffle mode
             backgroundMusic.volume = 0.5;
@@ -460,22 +448,17 @@ function skipToNextTrack() {
             backgroundMusic.play().then(() => {
                 musicPlaying = true;
                 currentTrackName = nextTrack;
-                debug('✅ Skipped to:', nextTrack);
+                debug('✅ Successfully skipped to:', nextTrack);
                 
                 // Show "Now Playing" notification
                 showNowPlayingNotification(nextTrack);
             }).catch(e => {
                 console.error('❌ Skip failed:', e);
-                debug('❌ Skip failed, trying to restart current track');
-                // Fallback: restart the audio system
-                setTimeout(() => {
-                    if (backgroundMusicEnabled) {
-                        startBackgroundMusic();
-                    }
-                }, 500);
+                // Fallback: try the normal start function
+                startBackgroundMusic();
             });
         }
-    }, 100);
+    }, 300);
 }
 
 // Create placeholder sound effects using Web Audio API
