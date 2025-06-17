@@ -388,7 +388,35 @@ function showNowPlayingNotification(trackId) {
 window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
 window.AudioSystem.getShuffleMode = () => shuffleMode;
 window.AudioSystem.initializeShuffleQueue = initializeShuffleQueue;
+window.AudioSystem.skipToNextTrack = skipToNextTrack;
 window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessible
+window.skipToNextTrack = skipToNextTrack; // Also make it directly accessible
+
+
+// Skip to next track (for shuffle mode)
+function skipToNextTrack() {
+    if (!shuffleMode) {
+        debug('⏭️ Skip only works in shuffle mode');
+        return;
+    }
+    
+    if (!musicPlaying || !backgroundMusic) {
+        debug('⏭️ No music playing to skip');
+        return;
+    }
+    
+    debug('⏭️ Skipping to next track...');
+    
+    // Stop current track
+    stopBackgroundMusic();
+    
+    // Start next track after a brief pause
+    setTimeout(() => {
+        if (backgroundMusicEnabled && !gamePaused && !gameOver) {
+            startBackgroundMusic();
+        }
+    }, 300);
+}
 
 // Create placeholder sound effects using Web Audio API
 // (These are temporary until you create proper MP3s)
