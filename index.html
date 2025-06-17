@@ -1015,6 +1015,25 @@ setTimeout(() => {
     }
 }
 
+#skipBtn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 8px;
+    font-size: 20px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#skipBtn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+}
+
+#skipBtn:active {
+    transform: scale(0.95);
+}
+
     </style>
 </head>
 <body>
@@ -1683,6 +1702,7 @@ setTimeout(() => {
 <div id="score">Score: 0</div>
     <div id="totalCoins">Coins: 0</div>
     <button id="pauseBtn">⏸️</button>
+    <button id="skipBtn" style="margin-left: 8px;">⏭️</button>
     <div id="speedIndicator">Speed: 1x</div>
     <div id="gameOver">
     <h2 style="margin-top: 0;">Game Over</h2>
@@ -3003,6 +3023,30 @@ document.getElementById('soundEffectsCheckbox').addEventListener('change', funct
     saveGameData('settings_change');
 });
 
+// Skip button (add this after your pause button initialization)
+const skipBtn = document.getElementById('skipBtn');
+if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+        if (window.skipToNextTrack) {
+            window.skipToNextTrack();
+        } else if (window.AudioSystem && window.AudioSystem.skipToNextTrack) {
+            window.AudioSystem.skipToNextTrack();
+        }
+    });
+    
+    // Hide skip button when not in shuffle mode
+    const updateSkipButton = () => {
+        const isShuffleMode = window.shuffleMode || (window.AudioSystem && window.AudioSystem.getShuffleMode && window.AudioSystem.getShuffleMode());
+        skipBtn.style.display = isShuffleMode ? 'inline-block' : 'none';
+        skipBtn.style.opacity = isShuffleMode ? '1' : '0.5';
+    };
+    
+    // Update button visibility initially and when shuffle mode changes
+    updateSkipButton();
+    
+    // Check periodically for shuffle mode changes (simple approach)
+    setInterval(updateSkipButton, 1000);
+}
 
 
 document.getElementById('backgroundMusicCheckbox').addEventListener('change', function() {
