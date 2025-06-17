@@ -21,6 +21,12 @@ let currentTrackName = 'medieval'; // Track this separately from game's currentT
 let audioInitialized = false;
 let musicPlaying = false;
 
+// Shuffle mode variables
+let shuffleMode = false;
+let shuffleQueue = [];
+let currentShuffleIndex = 0;
+let trackTransitioning = false;
+
 // Sound effect audio pool for better performance
 const soundPool = {
     coin: [],
@@ -93,16 +99,32 @@ function startBackgroundMusic() {
         backgroundMusic = null;
     }
     
+    // Get the track to play (shuffle or current)
+    const trackToPlay = shuffleMode ? getNextShuffleTrack() : currentTrack;
+    
     // Create new audio element for the current track
     // Note: ../assets because we're in the systems folder
-    backgroundMusic = new Audio(`assets/audio/${currentTrack}-track.mp3`);
-    backgroundMusic.loop = true;
+    backgroundMusic = new Audio(`assets/audio/${trackToPlay}-track.mp3`);
+    
+    // Set loop based on shuffle mode
+    backgroundMusic.loop = !shuffleMode;
     backgroundMusic.volume = 0.5; // Adjust as needed
+    
+    // Add event listener for track end (for shuffle mode)
+    if (shuffleMode) {
+        backgroundMusic.addEventListener('ended', handleTrackEnd);
+    }
     
     // Play the music
     backgroundMusic.play().then(() => {
         musicPlaying = true;
-        debug('✅ Background music started:', currentTrack);
+        currentTrackName = trackToPlay;
+        debug('✅ Background music started:', trackToPlay);
+        
+        // Show "Now Playing" notification if shuffle mode
+        if (shuffleMode) {
+            showNowPlayingNotification(trackToPlay);
+        }
     }).catch(e => {
         console.log('Music play failed:', e);
         musicPlaying = false;
@@ -138,6 +160,171 @@ function updateBackgroundMusic() {
     // You can also adjust playback rate for tempo changes (optional)
     // backgroundMusic.playbackRate = 1.0 + (speedProgress * 0.2); // Up to 20% faster
 }
+
+// ==================== SHUFFLE MODE FUNCTIONS ====================
+
+// Initialize shuffle queue
+function initializeShuffleQueue() {
+    // INJECTION POINT: availableTracks should contain all your tracks
+    shuffleQueue = [...availableTracks.map(track => track.id)];
+    shuffleArray(shuffleQueue);
+    currentShuffleIndex = 0;
+    debug('🔀 Shuffle queue initialized:', shuffleQueue);
+}
+
+// Shuffle array using Fisher-Yates algorithm
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Get next track in shuffle queue
+function getNextShuffleTrack() {
+    if (shuffleQueue.length === 0) {
+        initializeShuffleQueue();
+    }
+    
+    const track = shuffleQueue[currentShuffleIndex];
+    currentShuffleIndex = (currentShuffleIndex + 1) % shuffleQueue.length;
+    
+    // Re-shuffle when we've played all tracks
+    if (currentShuffleIndex === 0) {
+        shuffleArray(shuffleQueue);
+        debug('🔀 Re-shuffled queue:', shuffleQueue);
+    }
+    
+    return track;
+}
+
+// Handle track end (for shuffle mode)
+function handleTrackEnd() {
+    if (!shuffleMode || trackTransitioning) return;
+    
+    trackTransitioning = true;
+    debug('🎵 Track ended, transitioning to next...');
+    
+    // Smooth transition: fade out current, start next
+    fadeOutAndSwitchTrack();
+}
+
+// Smooth transition between tracks
+function fadeOutAndSwitchTrack() {
+    if (!backgroundMusic) return;
+    
+    const fadeInterval = setInterval(() => {
+        if (backgroundMusic.volume > 0.1) {
+            backgroundMusic.volume = Math.max(0, backgroundMusic.volume - 0.1);
+        } else {
+            clearInterval(fadeInterval);
+            
+            // Start next track
+            stopBackgroundMusic();
+            trackTransitioning = false;
+            
+            // Small delay before next track
+            setTimeout(() => {
+                if (shuffleMode && backgroundMusicEnabled) {
+                    startBackgroundMusic();
+                }
+            }, 500);
+        }
+    }, 100);
+}
+
+// Toggle shuffle mode
+function toggleShuffleMode() {
+    shuffleMode = !shuffleMode;
+    debug(shuffleMode ? '🔀 Shuffle mode enabled' : '🔀 Shuffle mode disabled');
+    
+    if (shuffleMode) {
+        initializeShuffleQueue();
+        // Restart music if currently playing
+        if (musicPlaying) {
+            stopBackgroundMusic();
+            startBackgroundMusic();
+        }
+    } else {
+        // Return to normal loop mode
+        if (musicPlaying && backgroundMusic) {
+            backgroundMusic.loop = true;
+            backgroundMusic.removeEventListener('ended', handleTrackEnd);
+        }
+    }
+    
+    // Update UI
+    updateShuffleUI();
+    
+    // Save preference
+    if (typeof saveGameData === 'function') {
+        saveGameData('settings_change');
+    }
+}
+
+// Update shuffle UI
+function updateShuffleUI() {
+    const shuffleBtn = document.getElementById('shuffleToggleBtn');
+    if (shuffleBtn) {
+        shuffleBtn.textContent = shuffleMode ? '🔀 Shuffle: ON' : '🔀 Shuffle: OFF';
+        shuffleBtn.style.background = shuffleMode ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+    }
+}
+
+// Show "Now Playing" notification
+function showNowPlayingNotification(trackId) {
+    // INJECTION POINT: Find track info from availableTracks array
+    const track = availableTracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'nowPlayingNotification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 10000;
+        max-width: 300px;
+        border-left: 4px solid #4CAF50;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transform: translateX(100%);
+        transition: transform 0.5s ease;
+    `;
+    
+    // INJECTION POINT: Update this text format when adding artist info to tracks
+    notification.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 2px;">♪ Now Playing</div>
+        <div>${track.name}</div>
+        <div style="font-size: 12px; opacity: 0.7;">${track.description}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 500);
+    }, 4000);
+}
+
+// Make shuffle functions globally accessible
+window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
+window.AudioSystem.shuffleMode = () => shuffleMode;
 
 // Create placeholder sound effects using Web Audio API
 // (These are temporary until you create proper MP3s)
