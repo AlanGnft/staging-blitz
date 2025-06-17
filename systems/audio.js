@@ -325,7 +325,7 @@ function showNowPlayingNotification(trackId) {
         // Create scrolling text
         const scrollText = document.createElement('div');
         scrollText.style.cssText = `
-            animation: scrollText 6s linear infinite;
+            animation: scrollText 4s linear infinite;
             font-weight: 500;
         `;
         scrollText.textContent = `♪ Now Playing: ${track.name} by ${track.artist || 'Unknown Artist'}`;
@@ -339,8 +339,6 @@ function showNowPlayingNotification(trackId) {
             style.textContent = `
                 @keyframes scrollText {
                     0% { transform: translateX(100%); }
-                    10% { transform: translateX(100%); }
-                    90% { transform: translateX(-100%); }
                     100% { transform: translateX(-100%); }
                 }
             `;
@@ -385,7 +383,7 @@ function showNowPlayingNotification(trackId) {
     }, 100);
     
     // Auto-hide after appropriate time
-    const hideDelay = isMobile ? 7000 : 4000; // Longer for mobile to see full scroll
+    const hideDelay = isMobile ? 5000 : 4000; // Shorter since animation is smoother now
     setTimeout(() => {
         if (isMobile) {
             notification.style.transform = 'translateX(-50%) translateY(-100%)';
