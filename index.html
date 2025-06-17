@@ -103,6 +103,34 @@ setTimeout(() => {
     z-index: 100;
     border: none;
 }
+
+#skipBtn {
+    position: absolute;
+    top: 95px;
+    right: 70px; /* 20px (pause right) + 40px (pause width) + 10px (gap) = 70px */
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: white;
+    cursor: pointer;
+    z-index: 100;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#skipBtn:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+#skipBtn:active {
+    transform: scale(0.95);
+}
         
         #speedIndicator {
     position: absolute;
@@ -146,6 +174,14 @@ setTimeout(() => {
         font-size: 20px;
         top: 80px;
         right: 15px;
+    }
+
+    #skipBtn {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+        top: 80px;
+        right: 60px; /* 15px (pause right) + 35px (pause width) + 10px (gap) = 60px */
     }
     
     #speedIndicator {
@@ -1702,7 +1738,7 @@ setTimeout(() => {
 <div id="score">Score: 0</div>
     <div id="totalCoins">Coins: 0</div>
     <button id="pauseBtn">⏸️</button>
-    <button id="skipBtn" style="margin-left: 8px;">⏭️</button>
+    <button id="skipBtn">⏭️</button>
     <div id="speedIndicator">Speed: 1x</div>
     <div id="gameOver">
     <h2 style="margin-top: 0;">Game Over</h2>
