@@ -98,13 +98,13 @@ setTimeout(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 18px;
     color: white;
     cursor: pointer;
     z-index: 100;
     transition: all 0.2s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 0;
 }
 
 #pauseBtn:hover {
@@ -130,13 +130,13 @@ setTimeout(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 18px;
     color: white;
     cursor: pointer;
     z-index: 100;
     transition: all 0.2s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 0;
 }
 
 #skipBtn:hover {
@@ -151,13 +151,9 @@ setTimeout(() => {
     transform: scale(0.95);
 }
 
-#skipBtn:hover {
-    background-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.05);
-}
-
-#skipBtn:active {
-    transform: scale(0.95);
+/* SVG icons inherit color from parent */
+#pauseBtn svg, #skipBtn svg {
+    pointer-events: none;
 }
         
         #speedIndicator {
@@ -1079,24 +1075,7 @@ setTimeout(() => {
     }
 }
 
-#skipBtn {
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 8px;
-    font-size: 20px;
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
 
-#skipBtn:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: scale(1.05);
-}
-
-#skipBtn:active {
-    transform: scale(0.95);
-}
 
     </style>
 </head>
@@ -1765,8 +1744,18 @@ setTimeout(() => {
 <!-- Game Over Screen -->
 <div id="score">Score: 0</div>
     <div id="totalCoins">Coins: 0</div>
-    <button id="pauseBtn">⏸️</button>
-    <button id="skipBtn">⏭️</button>
+    <button id="pauseBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1"/>
+            <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+    </button>
+    <button id="skipBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5,4 15,12 5,20"/>
+            <rect x="17" y="4" width="2" height="16"/>
+        </svg>
+    </button>
     <div id="speedIndicator">Speed: 1x</div>
     <div id="gameOver">
     <h2 style="margin-top: 0;">Game Over</h2>
