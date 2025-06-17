@@ -2462,6 +2462,10 @@ let availableTracks = [
     { id: 'electronic', name: 'Cybershock', description: 'Futuristic electronic beats', artist: 'Synth Master' },
     { id: 'ambient', name: 'Field of Memories', description: 'Dreamy ethereal lofi vibes', artist: 'Chill Producer' }
 ];
+
+// Make availableTracks accessible to audio system
+window.availableTracks = availableTracks;
+
 let currentTrack = 'ambient'; // Default to ambient music
 let selectedTrack = 'ambient'; // Track selected in jukebox
 
