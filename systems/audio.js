@@ -27,6 +27,9 @@ let shuffleQueue = [];
 let currentShuffleIndex = 0;
 let trackTransitioning = false;
 
+// Make shuffle mode accessible globally
+window.shuffleMode = false;
+
 // Sound effect audio pool for better performance
 const soundPool = {
     coin: [],
@@ -236,6 +239,7 @@ function fadeOutAndSwitchTrack() {
 // Toggle shuffle mode
 function toggleShuffleMode() {
     shuffleMode = !shuffleMode;
+    window.shuffleMode = shuffleMode; // Keep global in sync
     debug(shuffleMode ? '🔀 Shuffle mode enabled' : '🔀 Shuffle mode disabled');
     
     if (shuffleMode) {
@@ -324,7 +328,8 @@ function showNowPlayingNotification(trackId) {
 
 // Make shuffle functions globally accessible
 window.AudioSystem.toggleShuffleMode = toggleShuffleMode;
-window.AudioSystem.shuffleMode = () => shuffleMode;
+window.AudioSystem.getShuffleMode = () => shuffleMode;
+window.toggleShuffleMode = toggleShuffleMode; // Also make it directly accessible
 
 // Create placeholder sound effects using Web Audio API
 // (These are temporary until you create proper MP3s)
