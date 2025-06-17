@@ -168,8 +168,15 @@ function updateBackgroundMusic() {
 
 // Initialize shuffle queue
 function initializeShuffleQueue() {
-    // INJECTION POINT: availableTracks should contain all your tracks
-    shuffleQueue = [...availableTracks.map(track => track.id)];
+    // Get availableTracks from global scope
+    const tracks = window.availableTracks || [
+        { id: 'medieval' },
+        { id: 'electronic' }, 
+        { id: 'ambient' }
+    ];
+    
+    debug('🔀 Available tracks for shuffle:', tracks);
+    shuffleQueue = [...tracks.map(track => track.id)];
     shuffleArray(shuffleQueue);
     currentShuffleIndex = 0;
     debug('🔀 Shuffle queue initialized:', shuffleQueue);
@@ -401,11 +408,14 @@ function skipToNextTrack() {
     }
     
     if (!backgroundMusicEnabled) {
-        debug('⏭️ Background music is disabled');
+        debug('⏭️ Background music is disabled');f
         return;
     }
     
     debug('⏭️ Skipping to next track...');
+    debug('⏭️ availableTracks:', availableTracks);
+    debug('⏭️ shuffleQueue length:', shuffleQueue.length);
+    debug('⏭️ shuffleQueue contents:', shuffleQueue);
     debug('⏭️ Current shuffle index before skip:', currentShuffleIndex);
     debug('⏭️ Current shuffle queue:', shuffleQueue);
     
